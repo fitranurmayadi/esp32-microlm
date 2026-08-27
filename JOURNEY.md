@@ -33,10 +33,10 @@ The objective was to run a self-contained conversational model on a resource-con
 
 | Component | Origin / Reference | Purpose in Kibo |
 | :--- | :--- | :--- |
-| **Causal Decoder Transformer** | Vaswani et al. (2017) / nanoGPT (Karpathy) | Autoregressive token generation and multi-head self-attention. |
-| **Symmetric INT8 Quantization** | Dettmers et al. (2022) / TensorRT standards | Compressing weights from 7.02 MB (FP32) to 1.79 MB with zero loss in output quality. |
-| **Key-Value (KV) Caching** | vLLM / llama.cpp | Caches previous key and value projection vectors to maintain $O(1)$ computation per generation step. |
-| **Deterministic Tool Dispatch** | Toolformer (Schick et al., 2023) | Intercepts arithmetic queries for hardware ALU execution in <0.1 ms with 100% precision. |
+| **Causal Decoder Transformer** | [Vaswani et al. (2017)](https://arxiv.org/abs/1706.03762) / [nanoGPT (Karpathy)](https://github.com/karpathy/nanoGPT) | Autoregressive token generation and multi-head self-attention. |
+| **Symmetric INT8 Quantization** | [Dettmers et al. (2022)](https://arxiv.org/abs/2208.07339) / [TensorRT INT8 Standard](https://docs.nvidia.com/deeplearning/tensorrt/developer-guide/index.html#working-with-int8) | Compressing weights from 7.02 MB (FP32) to 1.79 MB with 100% logit cosine similarity. |
+| **Key-Value (KV) Caching** | [llama.cpp (Gerganov)](https://github.com/ggerganov/llama.cpp) / [vLLM (Kwon et al., 2023)](https://arxiv.org/abs/2309.06180) | Caches previous key and value projection vectors to maintain $O(1)$ computation per generation step. |
+| **Deterministic Tool Dispatch** | [Toolformer (Schick et al., 2023)](https://arxiv.org/abs/2302.04761) | Intercepts arithmetic queries for deterministic execution in <0.1 ms with 100% precision. |
 
 ---
 
@@ -48,20 +48,15 @@ We evaluated four precision formats for the Xtensa LX7 architecture:
 | :--- | :---: | :---: | :---: | :--- |
 | **FP32** | 7.02 MB | Baseline (0.0%) | 100.00% | High memory pressure (~92% PSRAM allocation). |
 | **FP16** | 3.51 MB | 50.0% | 100.00% | Software emulation required; no native FP16 vector ALU on Xtensa LX7. |
-| **INT8 (Selected)** | **1.79 MB** | **74.4%** | **100.00%** | **Optimal balance: Byte-aligned SIMD MAC and 100% semantic fidelity.** |
-| **INT4** | 0.88 MB | 87.2% | 98.87% | Degraded precision; +26% latency overhead from bit unpacking operations. |
-
-### Technical Rationale for INT8:
-1. **Fidelity**: Symmetric per-tensor scaling preserves 100.00% output token similarity relative to FP32.
-2. **Memory Efficiency**: At 1.79 MB, the model uses only ~22% of the 8MB PSRAM buffer.
-3. **Execution Overhead in INT4**: Real hardware profiling on the ESP32-S3 revealed that INT4 matrix multiplication is 26% slower than INT8 (8.26 ms vs 6.55 ms per 147K weight projection) due to CPU cycles spent on bit-masking (`& 0x0F`), bit-shifting (`>> 4`), and 4-bit sign extensions.
+| **INT8 (Selected)** | **1.79 MB** | **74.4%** | **100.00%** | **Optimal: Weight-only INT8 (W8A32) in PSRAM with FP32 FPU compute.** |
+| **INT4** | 0.88 MB | 87.2% | 98.87% | Degraded precision; +26% latency overhead from bit-unpacking. |
 
 ---
 
-## 5. Engineering Challenges & Solutions
+## 5. Key Implementation Solutions
 
-### 1. Flash Mode Configuration
-* **Problem**: Flashing in `QIO` mode caused ROM bootloader watchdog reset loops on certain modules (`ets_loader.c 78`).
+### 1. Flash Mode Compatibility (DIO vs QIO)
+* **Problem**: Setting flash mode to `QIO` on DevKit boards caused bootlooping because standard S3 breakout pins share quad lines with SPI Flash.
 * **Solution**: Standardized compile and flash flags to `DIO` mode across all targets.
 
 ### 2. PySerial Flow Control Differences
@@ -72,9 +67,9 @@ We evaluated four precision formats for the Xtensa LX7 architecture:
 * **Problem**: Hardcoding fixed model buffer sizes caused tail tensors (`ln_f.bias`, `head.weight`) to be truncated when binary alignments shifted.
 * **Solution**: Implemented dynamic size calculation using linker symbol boundaries: `(size_t)(kibo_embedded_model_end - kibo_embedded_model_start)`.
 
-### 4. High-Precision Matmul Accumulation
+### 4. W8A32 Weight-Only Matmul Accumulation
 * **Problem**: Floating-point rounding errors drifted during long forward-pass dot products.
-* **Solution**: Accumulate integer products in full float precision per row before applying the tensor scale factor:
+* **Solution**: Storing INT8 weights in PSRAM and dequantizing on the fly to float dot-product accumulation in the Xtensa FPU:
   $$\text{out}[r] = \left(\sum_{c=0}^{\text{cols}-1} x[c] \cdot w[r, c]\right) \cdot \text{scale} + \text{bias}[r]$$
 
 ---

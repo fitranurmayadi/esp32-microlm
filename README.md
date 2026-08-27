@@ -10,7 +10,7 @@
 
 Kibo is an on-chip generative Micro Language Model (Micro-LM) and hybrid inference engine written in bare-metal C++ for the ESP32-S3 microcontroller.
 
-The entire system executes locally on-device without cloud connections, external servers, or network access. All operations—including INT8 matrix multiplication, dynamic key-value (KV) caching, and hardware ALU arithmetic dispatch—run on the dual-core Xtensa LX7 processor at **~12–13 tokens/second** (~80 ms per token).
+The entire system executes locally on-device without cloud connections or external networks. All operations—including W8A32 matrix multiplication (INT8 weights with FP32 activation), dynamic key-value (KV) caching, and deterministic tool dispatch—run on the dual-core Xtensa LX7 processor at **~12–13 tokens/second** (~80 ms per token).
 
 ---
 
@@ -24,8 +24,8 @@ The entire system executes locally on-device without cloud connections, external
 
 ## Architectural Features
 
-* **Bare-Metal C++ Transformer**: Standalone forward-pass implementation of a 4-Layer Causal Transformer (Self-Attention, LayerNorm, GeLU, INT8 MatMul, and dynamic KV-Cache) with zero dependency on runtime frameworks (no TFLite Micro or ONNX).
-* **Hybrid AI Execution**: Merges autoregressive neural generation (persona dialogue and emotion control tokens) with deterministic hardware tool dispatch (ALU arithmetic evaluation in <0.1 ms).
+* **Bare-Metal C++ Transformer**: Standalone forward-pass implementation of a 4-Layer Causal Decoder Transformer (Self-Attention, LayerNorm, GeLU, W8A32 MatMul, and dynamic KV-Cache) with zero dependency on runtime frameworks (no TFLite Micro or ONNX).
+* **Hybrid AI Architecture**: Combines autoregressive neural generation (domain dialogue and emotion control tokens) with deterministic rule-based tool dispatch (instant arithmetic evaluation in <0.1 ms).
 * **Octal PSRAM Memory Layout**: Model weights (1.79 MB) and 128-token KV-cache are mapped into 80MHz Octal PSRAM (`AP_3v3`), avoiding SPI Flash access bottlenecks during forward passes.
 * **Direct ROM Fallback**: Supports embedded `.rodata` execution and Flash memory mapping (MMAP).
 * **Multi-Board Support**: Verified on ESP32-S3 DevKit N16R8, Arduino Nano ESP32, and Seeed Studio XIAO ESP32-S3.
@@ -50,8 +50,10 @@ Empirical evaluation on the Kibo Causal Transformer across precision formats:
 | :--- | :---: | :---: | :---: | :--- |
 | **FP32** | 7.02 MB | Baseline (0.0%) | 100.00% | High memory footprint (~92% PSRAM allocation) |
 | **FP16** | 3.51 MB | 50.0% | 100.00% | Software emulation required (No native FP16 ALU on Xtensa LX7) |
-| **INT8 (Selected)** | **1.79 MB** | **74.4%** | **100.00%** | **Optimal: Direct 1-byte access, 100% semantic fidelity** |
+| **INT8 (Selected)** | **1.79 MB** | **74.4%** | **100.00%** | **Optimal: 1-byte memory footprint, 100% logit cosine similarity** |
 | **INT4** | 0.88 MB | 87.2% | 98.87% | Degraded precision; +26% latency overhead from bit-unpacking |
+
+> **Note on Inference Path**: Quantization uses **Weight-Only INT8 (W8A32)**. Weights are stored as 1-byte integers in PSRAM to minimize bandwidth and storage requirements, while activations and accumulations are processed in FP32 on the Xtensa FPU.
 
 ---
 
