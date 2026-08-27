@@ -14,6 +14,14 @@ The entire system executes locally on-device without cloud connections, external
 
 ---
 
+## Live Hardware Demonstration
+
+![Kibo ESP32-S3 Live Demo](testing_video/kibo_demo.gif)
+
+> **Full Demonstration Video**: [`testing_video/ujicoba_kibo.mp4`](testing_video/ujicoba_kibo.mp4) (1080p @ 60 FPS live interactive UART terminal session running on physical ESP32-S3 hardware).
+
+---
+
 ## Architectural Features
 
 * **Bare-Metal C++ Transformer**: Standalone forward-pass implementation of a 4-Layer Causal Transformer (Self-Attention, LayerNorm, GeLU, INT8 MatMul, and dynamic KV-Cache) with zero dependency on runtime frameworks (no TFLite Micro or ONNX).

@@ -14,6 +14,14 @@ Seluruh proses inferensi dieksekusi 100% on-device tanpa jaringan internet atau 
 
 ---
 
+## Demonstrasi Nyata di Hardware ESP32-S3
+
+![Kibo ESP32-S3 Live Demo](../testing_video/kibo_demo.gif)
+
+> **Video Demonstrasi Lengkap**: [`../testing_video/ujicoba_kibo.mp4`](../testing_video/ujicoba_kibo.mp4) (Sesi live UART terminal 1080p @ 60 FPS langsung di ESP32-S3 DevKit N16R8).
+
+---
+
 ## Fitur Arsitektur
 
 * **Transformer C++ Bare-Metal**: Implementasi mandiri 4-Layer Causal Transformer (Self-Attention, LayerNorm, GeLU, MatMul INT8, dan KV-Cache) tanpa runtime framework berat seperti TFLite Micro atau ONNX.
