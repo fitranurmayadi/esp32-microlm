@@ -33,6 +33,10 @@ GREEN_PRIMARY = (5, 150, 105)   # #059669
 GREEN_BG = (209, 250, 229)      # #D1FAE5
 GREEN_BORDER = (167, 243, 208)  # #A7F3D0
 
+PURPLE_PRIMARY = (124, 58, 237) # #7C3AED
+PURPLE_BG = (243, 232, 255)     # #F3E8FF
+PURPLE_BORDER = (216, 180, 254) # #D8B4FE
+
 # Fonts
 FONT_REGULAR = "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"
 FONT_BOLD = "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf"
@@ -65,6 +69,15 @@ def draw_badge(draw, x, y, text, font, text_color, bg_color, border_color):
     draw.rounded_rectangle([x, y, x + w, y + h], radius=6, fill=bg_color, outline=border_color, width=1)
     draw.text((x + 12, y + 7), text, font=font, fill=text_color)
     return w, h
+
+def draw_arrow_down(draw, cx, y_start, y_end, color=BLUE_PRIMARY, width=3):
+    draw.line([cx, y_start, cx, y_end], fill=color, width=width)
+    # Arrow head
+    draw.polygon([
+        (cx, y_end + 8),
+        (cx - 7, y_end - 4),
+        (cx + 7, y_end - 4)
+    ], fill=color)
 
 def create_base_slide(badge_text="TINYML & EMBEDDED AI", slide_num=1, total_slides=7):
     img = Image.new("RGB", (W, H), BG_CANVAS)
@@ -134,7 +147,7 @@ def render_slide_1():
     print("Slide 1 rendered")
 
 # ==========================================
-# SLIDE 2: THE MOTIVATION (100% TECHNICAL & CLEAN)
+# SLIDE 2: THE MOTIVATION (CLEAN & CONCISE)
 # ==========================================
 def render_slide_2():
     img, draw = create_base_slide("THE MOTIVATION & PERSONA", 2)
@@ -200,39 +213,80 @@ def render_slide_3():
     print("Slide 3 rendered")
 
 # ==========================================
-# SLIDE 4: THE 5-STEP PIPELINE
+# SLIDE 4: ARCHITECTURAL PIPELINE DIAGRAM
 # ==========================================
 def render_slide_4():
-    img, draw = create_base_slide("ENGINEERING WORKFLOW", 4)
+    img, draw = create_base_slide("SYSTEM ARCHITECTURE", 4)
     
     t_font = get_font(48, bold=True)
-    draw.text((60, 130), "From PyTorch to Bare-Metal C++", font=t_font, fill=TEXT_PRIMARY)
+    draw.text((60, 125), "End-to-End Pipeline Diagram", font=t_font, fill=TEXT_PRIMARY)
     
-    steps = [
-        ("01", "Dataset Preparation", "Curated custom conversational dataset for companion robot interaction."),
-        ("02", "PyTorch Training", "Trained 4-Layer Causal Transformer (1.84M params, 192 dim)."),
-        ("03", "INT8 Quantization", "Compressed model from 7.02 MB -> 1.79 MB (100% FP32 fidelity)."),
-        ("04", "Bare-Metal C++ Engine", "Custom forward pass and KV-cache without runtime framework bloat."),
-        ("05", "Hardware ALU Intercept", "Math questions ('100 x 7') evaluated on hardware ALU in <0.1 ms."),
-    ]
+    sub_font = get_font(21, bold=False)
+    draw.text((60, 185), "Workflow from Host Training to On-Chip Microcontroller Execution:", font=sub_font, fill=TEXT_SECONDARY)
     
-    y = 220
-    for num, title, desc in steps:
-        draw_shadowed_card(draw, [60, y, 1020, y + 165], radius=14, fill=CARD_BG, outline=CARD_BORDER, width=1)
-        draw.rounded_rectangle([60, y, 70, y + 165], radius=4, fill=BLUE_PRIMARY)
-        
-        draw.rounded_rectangle([95, y + 22, 165, y + 92], radius=10, fill=BLUE_BG, outline=BLUE_BORDER, width=1)
-        draw.text((108, y + 33), num, font=get_font(26, bold=True, mono=True), fill=BLUE_PRIMARY)
-        
-        draw.text((190, y + 25), title, font=get_font(25, bold=True), fill=TEXT_PRIMARY)
-        draw.text((190, y + 72), desc, font=get_font(20), fill=TEXT_SECONDARY)
-        y += 185
-        
+    # 3 Main Pipeline Tiers / Containers
+    
+    # --- TIER 1: HOST TRAINING (PC / PYTORCH) ---
+    draw_shadowed_card(draw, [60, 230, 1020, 480], radius=16, fill=CARD_BG, outline=BLUE_BORDER, width=1)
+    draw_badge(draw, 85, 250, "STAGE 1: MODEL TRAINING (HOST)", get_font(14, bold=True), BLUE_PRIMARY, BLUE_BG, BLUE_BORDER)
+    
+    # Left box: Dataset
+    draw.rounded_rectangle([85, 295, 520, 455], radius=12, fill=(248, 250, 252), outline=CARD_BORDER, width=1)
+    draw.text((105, 315), "Dialogue Dataset", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
+    draw.text((105, 355), "• Domain robot dialogues\n• 91 Byte-pair token vocab", font=get_font(18), fill=TEXT_SECONDARY)
+    
+    # Connector Arrow inside Tier 1
+    draw.line([520, 375, 560, 375], fill=BLUE_PRIMARY, width=3)
+    draw.polygon([(570, 375), (558, 368), (558, 382)], fill=BLUE_PRIMARY)
+    
+    # Right box: PyTorch Transformer
+    draw.rounded_rectangle([570, 295, 995, 455], radius=12, fill=(248, 250, 252), outline=CARD_BORDER, width=1)
+    draw.text((590, 315), "PyTorch Transformer", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
+    draw.text((590, 355), "• 4 Layers | 192 Dim | 4 Heads\n• 1.84M Parameters (FP32)", font=get_font(18), fill=TEXT_SECONDARY)
+    
+    # Arrow between Tier 1 and Tier 2
+    draw_arrow_down(draw, 540, 480, 525, color=AMBER_PRIMARY, width=3)
+    
+    # --- TIER 2: QUANTIZATION & EXPORT ---
+    draw_shadowed_card(draw, [60, 535, 1020, 785], radius=16, fill=CARD_BG, outline=AMBER_BORDER, width=1)
+    draw_badge(draw, 85, 555, "STAGE 2: QUANTIZATION & PACKAGING", get_font(14, bold=True), AMBER_PRIMARY, AMBER_BG, AMBER_BORDER)
+    
+    # Left box: INT8 Quantization
+    draw.rounded_rectangle([85, 600, 520, 760], radius=12, fill=(255, 251, 235), outline=AMBER_BORDER, width=1)
+    draw.text((105, 620), "Symmetric INT8", font=get_font(22, bold=True), fill=AMBER_PRIMARY)
+    draw.text((105, 660), "• 7.02 MB -> 1.79 MB (74.4%)\n• 100.00% FP32 output fidelity", font=get_font(18), fill=TEXT_SECONDARY)
+    
+    # Connector Arrow inside Tier 2
+    draw.line([520, 680, 560, 680], fill=AMBER_PRIMARY, width=3)
+    draw.polygon([(570, 680), (558, 673), (558, 687)], fill=AMBER_PRIMARY)
+    
+    # Right box: Binary Serialization
+    draw.rounded_rectangle([570, 600, 995, 760], radius=12, fill=(255, 251, 235), outline=AMBER_BORDER, width=1)
+    draw.text((590, 620), "C++ Header / Binary", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
+    draw.text((590, 660), "• Octal PSRAM boundary map\n• Direct memory-mapped struct", font=get_font(18), fill=TEXT_SECONDARY)
+    
+    # Dual Arrows between Tier 2 and Tier 3
+    draw_arrow_down(draw, 302, 785, 830, color=GREEN_PRIMARY, width=3)
+    draw_arrow_down(draw, 782, 785, 830, color=GREEN_PRIMARY, width=3)
+    
+    # --- TIER 3: ON-CHIP EXECUTION (ESP32-S3) ---
+    draw_shadowed_card(draw, [60, 840, 1020, 1165], radius=16, fill=CARD_BG, outline=GREEN_BORDER, width=2)
+    draw_badge(draw, 85, 860, "STAGE 3: ON-CHIP EXECUTION (ESP32-S3 @ 240MHz)", get_font(14, bold=True), GREEN_PRIMARY, GREEN_BG, GREEN_BORDER)
+    
+    # Dual Engine Paths (Bare-metal C++ & Hardware ALU)
+    draw.rounded_rectangle([85, 905, 520, 1140], radius=12, fill=GREEN_BG, outline=GREEN_BORDER, width=1)
+    draw.text((105, 925), "Bare-Metal C++ Engine", font=get_font(22, bold=True), fill=GREEN_PRIMARY)
+    draw.text((105, 965), "• 128-Token KV-Cache\n• SIMD Vector Dot Products\n• ~12-13 tokens/sec generation", font=get_font(18), fill=TEXT_PRIMARY)
+    
+    draw.rounded_rectangle([570, 905, 995, 1140], radius=12, fill=(240, 253, 244), outline=GREEN_BORDER, width=1)
+    draw.text((590, 925), "Hardware ALU Tool", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
+    draw.text((590, 965), "• Math queries ('100 x 7')\n• Executed in < 0.1 ms\n• Zero LLM hallucinations", font=get_font(18), fill=TEXT_SECONDARY)
+    
     img.save(os.path.join(OUTPUT_DIR, "slide_04.png"))
-    print("Slide 4 rendered")
+    print("Slide 4 diagram rendered")
 
 # ==========================================
-# SLIDE 5: CLEAN BENCHMARK TABLE (FP32, FP16, INT8, INT4)
+# SLIDE 5: CLEAN BENCHMARK TABLE
 # ==========================================
 def render_slide_5():
     img, draw = create_base_slide("QUANTIZATION BENCHMARK", 5)
