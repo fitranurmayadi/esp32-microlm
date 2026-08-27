@@ -3,7 +3,9 @@ import sys
 import os
 import re
 
-sys.path.append("/home/aiot/Projects/SBC/kibo_microlm")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.append(SCRIPT_DIR)
 from tokenizer import KiboTokenizer
 from model import KiboMicroLM
 
@@ -41,7 +43,7 @@ def test_kibo_chat_batch():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
     tok = KiboTokenizer()
-    tok.load("/home/aiot/Projects/SBC/kibo_microlm/kibo_vocab.json")
+    tok.load(os.path.join(SCRIPT_DIR, "kibo_vocab.json"))
     vocab_size = len(tok.tok_to_id)
     
     model = KiboMicroLM(
@@ -52,7 +54,7 @@ def test_kibo_chat_batch():
         max_seq_len=128
     ).to(device)
     
-    model_path = "/home/aiot/Projects/SBC/kibo_microlm/kibo_model_2mb.pt"
+    model_path = os.path.join(SCRIPT_DIR, "kibo_model_2mb.pt")
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     

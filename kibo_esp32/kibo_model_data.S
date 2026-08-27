@@ -4,5 +4,5 @@
 .align 4
 
 kibo_embedded_model_start:
-.incbin "/home/aiot/Projects/SBC/kibo_microlm/kibo_model_int8.bin"
+.incbin "kibo_esp32/kibo_model_int8.bin"
 kibo_embedded_model_end:

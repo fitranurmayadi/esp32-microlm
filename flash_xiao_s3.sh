@@ -1,9 +1,10 @@
 #!/bin/bash
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "[kibo] flashing firmware to seeed studio xiao esp32-s3 (8mb flash / 8mb psram)"
 
-BUILD_DIR="/home/aiot/Projects/SBC/kibo_esp32/build/esp32.esp32.XIAO_ESP32S3"
+BUILD_DIR="$SCRIPT_DIR/kibo_esp32/build/esp32.esp32.XIAO_ESP32S3"
 CORE_DIR="/home/aiot/.arduino15/packages/esp32/hardware/esp32/3.3.11"
 
 PORT=$(ls /dev/ttyACM* /dev/ttyUSB* 2>/dev/null | head -n 1)

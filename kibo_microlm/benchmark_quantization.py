@@ -6,7 +6,9 @@ import sys
 import copy
 import math
 
-sys.path.append("/home/aiot/Projects/SBC/kibo_microlm")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.append(SCRIPT_DIR)
 from tokenizer import KiboTokenizer
 from model import KiboMicroLM
 
@@ -43,12 +45,12 @@ def run_benchmark():
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tok = KiboTokenizer()
-    tok.load("/home/aiot/Projects/SBC/kibo_microlm/kibo_vocab.json")
+    tok.load(os.path.join(SCRIPT_DIR, "kibo_vocab.json"))
     vocab_size = len(tok.tok_to_id)
     
     # 1. Load Base FP32 Model
     model_fp32 = KiboMicroLM(vocab_size=vocab_size, n_embd=192, n_head=4, n_layer=4, max_seq_len=128).to(device)
-    model_fp32.load_state_dict(torch.load("/home/aiot/Projects/SBC/kibo_microlm/kibo_model_2mb.pt", map_location=device))
+    model_fp32.load_state_dict(torch.load(os.path.join(SCRIPT_DIR, "kibo_model_2mb.pt"), map_location=device))
     model_fp32.eval()
     
     # 2. Create FP16 Model

@@ -6,6 +6,8 @@ import json
 from tokenizer import KiboTokenizer
 from model import KiboMicroLM
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 def train_kibo_model():
     print("==========================================")
     print("   Kibo Micro-LM 2MB Training Pipeline   ")
@@ -17,14 +19,14 @@ def train_kibo_model():
     else:
         print("Using CPU")
         
-    dataset_path = "/home/aiot/Projects/SBC/kibo_microlm/kibo_dataset.txt"
+    dataset_path = os.path.join(SCRIPT_DIR, "kibo_dataset.txt")
     with open(dataset_path, 'r', encoding='utf-8') as f:
         raw_text = f.read()
         
     # 1. Build Tokenizer
     tok = KiboTokenizer()
     tok.build_vocab(raw_text)
-    tok.save("/home/aiot/Projects/SBC/kibo_microlm/kibo_vocab.json")
+    tok.save(os.path.join(SCRIPT_DIR, "kibo_vocab.json"))
     vocab_size = len(tok.tok_to_id)
     pad_id = tok.tok_to_id.get("<PAD>", 0)
     eos_id = tok.tok_to_id.get("<EOS>", 3)
@@ -94,7 +96,7 @@ def train_kibo_model():
     print(f"🎉 Training Completed in {t1 - t0:.2f} seconds!")
     
     # Save Model Weights
-    save_path = "/home/aiot/Projects/SBC/kibo_microlm/kibo_model_2mb.pt"
+    save_path = os.path.join(SCRIPT_DIR, "kibo_model_2mb.pt")
     torch.save(model.state_dict(), save_path)
     print(f"Saved PyTorch Model Weights to {save_path}")
     

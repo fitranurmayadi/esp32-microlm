@@ -1,11 +1,12 @@
 #!/bin/bash
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "[kibo] flashing firmware to esp32-s3 devkit (16mb flash / 8mb psram)"
 
-BUILD_DIR="/home/aiot/Projects/SBC/kibo_esp32/build/esp32.esp32.esp32s3"
+BUILD_DIR="$SCRIPT_DIR/kibo_esp32/build/esp32.esp32.esp32s3"
 CORE_DIR="/home/aiot/.arduino15/packages/esp32/hardware/esp32/3.3.11"
-MODEL_BIN="/home/aiot/Projects/SBC/kibo_microlm/kibo_model_int8.bin"
+MODEL_BIN="$SCRIPT_DIR/kibo_microlm/kibo_model_int8.bin"
 
 PORT=$(ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null | head -n 1)
 if [ -z "$PORT" ]; then
