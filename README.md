@@ -69,7 +69,7 @@ Empirical evaluation on the Kibo Causal Transformer across precision formats:
 
 * **Architecture**: Autoregressive Causal Decoder Transformer (GPT-style)
 * **Parameters**: 1,839,360 (~1.84 Million)
-* **Quantization**: Symmetric per-tensor INT8 ($W_{int8} = \text{round}(W / S)$)
+* **Quantization**: Symmetric per-tensor INT8 ($W_{\text{int8}} = \text{clip}\left(\text{round}\left(\frac{W}{S}\right), -128, 127\right)$, where scale $S = \frac{\max(|W|)}{127}$)
 * **Hidden Dimension ($d_{model}$)**: 192
 * **Attention Heads ($n_{head}$)**: 4 (Head Dimension: 48)
 * **Layers ($n_{layer}$)**: 4
