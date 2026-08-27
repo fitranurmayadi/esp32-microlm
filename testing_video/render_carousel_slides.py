@@ -141,7 +141,7 @@ def generate_light_benchmark_chart():
     return chart_path
 
 # ==========================================
-# SLIDE 1: COVER
+# SLIDE 1: COVER (WITH CUSTOM ESP32-S3-N16R8 PHOTO)
 # ==========================================
 def render_slide_1():
     img, draw = create_base_slide("TINYML & ON-DEVICE AI", 1)
@@ -151,21 +151,34 @@ def render_slide_1():
     draw.text((60, 200), "Generative Micro-LM", font=t_font, fill=BLUE_PRIMARY)
     draw.text((60, 270), "on the ESP32-S3", font=t_font, fill=TEXT_PRIMARY)
     
-    # 1-Line Key Subtitle
     sub_font = get_font(23, bold=False)
     draw.text((60, 360), "100% Offline  •  Bare-Metal C++  •  ~12-13 tokens/sec", font=sub_font, fill=TEXT_SECONDARY)
+    
+    # Outer Card
+    draw_shadowed_card(draw, [60, 420, 1020, 1180], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=1)
     
     dev_path = os.path.join(ASSETS_DIR, "esp32s3_devkit.jpg")
     if os.path.exists(dev_path):
         hw_img = Image.open(dev_path).convert("RGB")
-        hw_img = hw_img.resize((960, 560), Image.Resampling.LANCZOS)
-        draw_shadowed_card(draw, [60, 420, 1020, 1180], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=2)
-        img.paste(hw_img, (60, 435))
+        hw_img = hw_img.resize((310, 620), Image.Resampling.LANCZOS)
+        img.paste(hw_img, (110, 480))
         
-        draw.rounded_rectangle([90, 1075, 990, 1150], radius=10, fill=(15, 23, 42), outline=AMBER_PRIMARY, width=2)
-        spec_font = get_font(20, bold=True, mono=True)
-        draw.text((115, 1098), "ESP32-S3 DevKit | Xtensa 240MHz | 8MB PSRAM | INT8 (1.79 MB)", font=spec_font, fill=(255, 215, 0))
+        # Spec cards on the right
+        specs_side = [
+            ("N16R8 MODULE", "ESP32-S3-WROOM-1", "16MB Flash | 8MB Octal PSRAM", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
+            ("COMPUTE ENGINE", "Dual-Core Xtensa LX7", "Clocked @ 240MHz (Bare-metal C++)", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
+            ("ON-CHIP MODEL", "1.84M Transformer", "INT8 Quantized (1.79 MB in PSRAM)", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+            ("INFERENCE SPEED", "12 to 13 tokens/sec", "~80 ms per token real-time generation", TEXT_PRIMARY, (241, 245, 249), CARD_BORDER),
+        ]
         
+        sy = 480
+        for tag, title, desc, col, bg_col, b_col in specs_side:
+            draw.rounded_rectangle([460, sy, 980, sy + 140], radius=12, fill=bg_col, outline=b_col, width=1)
+            draw.text((485, sy + 18), tag, font=get_font(15, bold=True), fill=col)
+            draw.text((485, sy + 48), title, font=get_font(23, bold=True), fill=TEXT_PRIMARY)
+            draw.text((485, sy + 88), desc, font=get_font(18), fill=TEXT_SECONDARY)
+            sy += 160
+            
     img.save(os.path.join(OUTPUT_DIR, "slide_01.png"))
     print("Slide 1 rendered")
 
@@ -189,7 +202,6 @@ def render_slide_2():
         draw_shadowed_card(draw, [60, y, 1020, y + 280], radius=16, fill=CARD_BG, outline=CARD_BORDER, width=1)
         draw_badge(draw, 90, y + 25, tag, get_font(15, bold=True), col, bg_col, b_col)
         
-        # Render title with CJK if Kanji present
         if "希望" in title:
             draw.text((90, y + 75), "Kibo (", font=get_font(28, bold=True), fill=TEXT_PRIMARY)
             kw = get_font(28, bold=True).getbbox("Kibo (")[2]
@@ -225,7 +237,6 @@ def render_slide_3():
         draw_shadowed_card(draw, [60, y, 1020, y + 295], radius=16, fill=CARD_BG, outline=CARD_BORDER, width=1)
         draw_badge(draw, 90, y + 22, tag, get_font(15, bold=True), col, bg_col, b_col)
         
-        # Big Stat
         draw.text((90, y + 70), big_stat, font=get_font(34, bold=True, mono=True), fill=col)
         stat_w = get_font(34, bold=True, mono=True).getbbox(big_stat)[2]
         draw.text((105 + stat_w, y + 78), f"—  {subtitle}", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
@@ -288,7 +299,6 @@ def render_slide_5():
         draw_shadowed_card(draw, [60, 235, 1020, 695], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=1)
         img.paste(chart_img, (60, 245))
         
-    # High-Impact Key Finding Box
     draw_shadowed_card(draw, [60, 725, 1020, 1165], radius=16, fill=CARD_BG, outline=BLUE_BORDER, width=2)
     draw_badge(draw, 90, 755, "KEY HARDWARE FINDING", get_font(16, bold=True), BLUE_PRIMARY, BLUE_BG, BLUE_BORDER)
     
@@ -357,7 +367,7 @@ def render_slide_7():
     draw.text((60, 130), "Validated on 3 Form Factors", font=t_font, fill=TEXT_PRIMARY)
     
     boards = [
-        ("ESP32-S3 DevKit N16R8", "16MB Flash | 8MB Octal PSRAM", "esp32s3_devkit.jpg"),
+        ("ESP32-S3 DevKit N16R8", "16MB Flash | 8MB Octal PSRAM", "esp32s3_devkit_horiz.jpg"),
         ("Arduino Nano ESP32", "16MB Flash | 8MB Octal PSRAM", "arduino_nano_esp32.jpg"),
         ("Seeed Studio XIAO S3", "8MB Flash | 8MB Octal PSRAM", "seeed_xiao_esp32s3.jpg"),
     ]
@@ -369,8 +379,8 @@ def render_slide_7():
         photo_path = os.path.join(ASSETS_DIR, photo_file)
         if os.path.exists(photo_path):
             b_img = Image.open(photo_path).convert("RGB")
-            b_img = b_img.resize((210, 155), Image.Resampling.LANCZOS)
-            img.paste(b_img, (80, y + 20))
+            b_img = b_img.resize((210, 105) if "devkit" in photo_file else (210, 155), Image.Resampling.LANCZOS)
+            img.paste(b_img, (80, y + 45 if "devkit" in photo_file else y + 20))
             
         draw.text((320, y + 35), name, font=get_font(27, bold=True), fill=TEXT_PRIMARY)
         draw.text((320, y + 80), specs, font=get_font(21), fill=BLUE_PRIMARY)
@@ -400,4 +410,4 @@ slide_files = [os.path.join(OUTPUT_DIR, f"slide_{i:02d}.png") for i in range(1, 
 images = [Image.open(f).convert("RGB") for f in slide_files]
 pdf_path = os.path.join(OUTPUT_DIR, "esp32_microlm_carousel_light.pdf")
 images[0].save(pdf_path, save_all=True, append_images=images[1:], resolution=150.0)
-print(f"All 7 Minimalist Light Mode slides and PDF generated at {pdf_path}")
+print(f"All 7 Minimalist Light Mode slides and PDF updated at {pdf_path}")
