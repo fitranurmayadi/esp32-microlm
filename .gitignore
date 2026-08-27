@@ -1,0 +1,23 @@
+# Build directories and binaries
+build/
+**/build/
+*.bin.elf
+*.bin.map
+*.merged.bin
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.pt
+
+# IDE and local configuration
+.vscode/
+.idea/
+.agents/
+.DS_Store
+*.swp
+*~
