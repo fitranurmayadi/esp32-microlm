@@ -16,16 +16,19 @@ H, W, _ = base_np.shape
 cap = cv2.VideoCapture(VIDEO_PATH)
 fps = cap.get(cv2.CAP_PROP_FPS)
 
-# Limit to first 12.5 seconds (boot + prompt + live generation + stats)
-max_frames = int(12.5 * fps)
+# Exact segment: 16.5s to 25.5s (9.0 seconds)
+start_frame = int(16.5 * fps)
+end_frame = int(25.5 * fps)
 
-print(f"Rendering short video: {max_frames} frames (12.5s @ {fps} fps)...")
+cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+total_frames = end_frame - start_frame
+
+print(f"Rendering 9.0s segment ('how are you?'): {total_frames} frames @ {fps} fps...")
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter(OUTPUT_MP4, fourcc, fps, (W, H))
 
-frame_count = 0
-while frame_count < max_frames:
+for _ in range(total_frames):
     ret, frame = cap.read()
     if not ret:
         break
@@ -35,19 +38,18 @@ while frame_count < max_frames:
     composite[245:245+610, 60:60+960] = frame_resized
     
     out.write(composite)
-    frame_count += 1
 
 cap.release()
 out.release()
-print(f"Short MP4 rendered: {frame_count} frames")
+print(f"Short MP4 rendered: {total_frames} frames")
 
 # 1. Optimize MP4
 os.system(f"ffmpeg -y -i '{OUTPUT_MP4}' -c:v libx264 -crf 18 -preset fast -pix_fmt yuv420p '{OUTPUT_MP4}.temp.mp4' && mv '{OUTPUT_MP4}.temp.mp4' '{OUTPUT_MP4}'")
 
-# 2. Generate punchy short Slide 6 GIF (12.5s @ 12 fps, scaled 720w)
+# 2. Generate Slide 6 GIF (9s @ 12 fps, scaled 720w)
 os.system(f"ffmpeg -y -i '{OUTPUT_MP4}' -vf 'fps=12,scale=720:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse' -loop 0 '{OUTPUT_GIF}'")
 
-# 3. Generate standalone cropped terminal short GIF for README/Chat
-os.system(f"ffmpeg -y -ss 0 -t 12.5 -i '{VIDEO_PATH}' -vf 'fps=12,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse' -loop 0 '{SHORT_TERM_GIF}'")
+# 3. Generate standalone cropped terminal GIF for README
+os.system(f"ffmpeg -y -ss 16.5 -t 9.0 -i '{VIDEO_PATH}' -vf 'fps=12,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse' -loop 0 '{SHORT_TERM_GIF}'")
 
-print("All short GIF and MP4 assets created!")
+print("9.0s 'how are you?' GIF & MP4 assets successfully created!")
