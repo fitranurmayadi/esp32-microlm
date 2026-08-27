@@ -134,7 +134,7 @@ def render_slide_1():
     print("Slide 1 rendered")
 
 # ==========================================
-# SLIDE 2: THE MOTIVATION (CLEAN & CONCISE)
+# SLIDE 2: THE MOTIVATION (100% TECHNICAL & CLEAN)
 # ==========================================
 def render_slide_2():
     img, draw = create_base_slide("THE MOTIVATION & PERSONA", 2)
@@ -143,8 +143,8 @@ def render_slide_2():
     draw.text((60, 130), "Brain for a Mini Desktop Robot", font=t_font, fill=TEXT_PRIMARY)
     
     cards = [
-        ("THE CURIOSITY", "Can an ESP32 think locally?", "Building on-device conversational intelligence without cloud APIs or monthly subscription costs.", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
-        ("THE PERSONA", "Meet Kibo (希望 - Hope)", "Interactive conversational robot persona running completely on-device.", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
+        ("THE GOAL", "On-Device Generative AI", "Running an autoregressive Causal Transformer locally on ESP32-S3 silicon.", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
+        ("THE PERSONA", "Meet Kibo (希望 - Hope)", "Interactive conversational companion robot persona running on-chip.", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
         ("THE FRAMEWORK", "ESP32 Micro-LM Engine", "A lightweight, modular, bare-metal C++ inference engine designed for microcontrollers.", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
     ]
     
@@ -180,7 +180,7 @@ def render_slide_3():
     cards = [
         ("COMPUTE ENGINE", "240 MHz", "Dual-Core Xtensa LX7", "• Bare-metal C++ execution (Zero framework bloat)\n• SIMD-aligned vector dot products\n• Deterministic timing with zero garbage collection", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
         ("MEMORY ALLOCATION", "8 MB", "Octal PSRAM (80MHz)", "• 1.79 MB INT8 Model Weights in PSRAM\n• Dynamic 128-token Key-Value (KV) Cache\n• Zero-wait working buffers for multi-head attention", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
-        ("MODEL ARCHITECTURE", "1.84M", "Causal Transformer Parameters", "• 4 Transformer Layers | 192 Dim | 4 Heads\n• 91 Vocabulary Tokens\n• 100% Offline execution with zero telemetry", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+        ("MODEL ARCHITECTURE", "1.84M", "Causal Transformer Parameters", "• 4 Transformer Layers | 192 Dim | 4 Heads\n• 91 Vocabulary Tokens\n• Autonomous local execution on Xtensa LX7 core", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
     ]
     
     y = 220
@@ -243,10 +243,8 @@ def render_slide_5():
     sub_font = get_font(21, bold=False)
     draw.text((60, 195), "Evaluation across 4 precision formats on 1.84M parameters:", font=sub_font, fill=TEXT_SECONDARY)
     
-    # Main Table Outer Card
     draw_shadowed_card(draw, [60, 245, 1020, 920], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=1)
     
-    # Table Header Row
     draw.rounded_rectangle([60, 245, 1020, 315], radius=16, fill=(241, 245, 249))
     draw.text((90, 268), "Format", font=get_font(18, bold=True), fill=TEXT_PRIMARY)
     draw.text((250, 268), "Model Size", font=get_font(18, bold=True), fill=TEXT_PRIMARY)
@@ -280,7 +278,6 @@ def render_slide_5():
             draw.text((820, ry + 45), status, font=get_font(18), fill=TEXT_SECONDARY)
         ry += 140
         
-    # Bottom Key Finding Card
     draw_shadowed_card(draw, [60, 945, 1020, 1165], radius=16, fill=CARD_BG, outline=BLUE_BORDER, width=2)
     draw_badge(draw, 90, 970, "KEY BENCHMARK TAKEAWAY", get_font(15, bold=True), BLUE_PRIMARY, BLUE_BG, BLUE_BORDER)
     draw.text((90, 1025), "INT8 Delivers the Optimal Balance for ESP32-S3", font=get_font(24, bold=True), fill=TEXT_PRIMARY)
