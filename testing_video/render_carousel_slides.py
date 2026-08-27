@@ -181,7 +181,7 @@ def render_slide_1():
     print("Slide 1 rendered")
 
 # ==========================================
-# SLIDE 2: THE MOTIVATION (ULTRA-CLEAN & SPATIOUS)
+# SLIDE 2: THE MOTIVATION (CLEAN & CONCISE)
 # ==========================================
 def render_slide_2():
     img, draw = create_base_slide("THE MOTIVATION & PERSONA", 2)
@@ -191,13 +191,12 @@ def render_slide_2():
     
     cards = [
         ("THE CURIOSITY", "Can an ESP32 think locally?", "Building on-device conversational intelligence without cloud APIs or monthly subscription costs.", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
-        ("THE PERSONA", "Meet Kibo (希望 - Hope)", "Interactive companion character with emotion tags ([HAPPY], [NEUTRAL]) to drive robot gestures.", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
-        ("THE FRAMEWORK", "ESP32 Micro-LM Engine", "A lightweight, modular, bare-metal C++ inference engine designed specifically for $5 microcontrollers.", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+        ("THE PERSONA", "Meet Kibo (希望 - Hope)", "Interactive conversational robot persona running completely on-device.", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
+        ("THE FRAMEWORK", "ESP32 Micro-LM Engine", "A lightweight, modular, bare-metal C++ inference engine designed for microcontrollers.", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
     ]
     
     y = 220
     for tag, title, body, col, bg_col, b_col in cards:
-        # Generous height: 260px (lots of padding, no text clipping)
         draw_shadowed_card(draw, [60, y, 1020, y + 260], radius=16, fill=CARD_BG, outline=CARD_BORDER, width=1)
         draw_badge(draw, 90, y + 25, tag, get_font(15, bold=True), col, bg_col, b_col)
         
@@ -217,7 +216,7 @@ def render_slide_2():
     print("Slide 2 rendered")
 
 # ==========================================
-# SLIDE 3: ON-CHIP ARCHITECTURE (BIG NUMBERS)
+# SLIDE 3: ON-CHIP ARCHITECTURE
 # ==========================================
 def render_slide_3():
     img, draw = create_base_slide("ON-CHIP ARCHITECTURE", 3)
@@ -228,7 +227,7 @@ def render_slide_3():
     cards = [
         ("COMPUTE ENGINE", "240 MHz", "Dual-Core Xtensa LX7", "• Bare-metal C++ execution (Zero framework bloat)\n• SIMD-aligned vector dot products\n• Deterministic timing with zero garbage collection", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
         ("MEMORY ALLOCATION", "8 MB", "Octal PSRAM (80MHz)", "• 1.79 MB INT8 Model Weights in PSRAM\n• Dynamic 128-token Key-Value (KV) Cache\n• Zero-wait working buffers for multi-head attention", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
-        ("MODEL ARCHITECTURE", "1.84M", "Causal Transformer Parameters", "• 4 Transformer Layers | 192 Dim | 4 Heads\n• 91 Vocabulary Tokens (Subwords + Control Tags)\n• 100% Offline execution with zero telemetry", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+        ("MODEL ARCHITECTURE", "1.84M", "Causal Transformer Parameters", "• 4 Transformer Layers | 192 Dim | 4 Heads\n• 91 Vocabulary Tokens\n• 100% Offline execution with zero telemetry", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
     ]
     
     y = 220
@@ -248,7 +247,7 @@ def render_slide_3():
     print("Slide 3 rendered")
 
 # ==========================================
-# SLIDE 4: THE 5-STEP PIPELINE (CLEAN 1-LINERS)
+# SLIDE 4: THE 5-STEP PIPELINE
 # ==========================================
 def render_slide_4():
     img, draw = create_base_slide("ENGINEERING WORKFLOW", 4)
@@ -257,7 +256,7 @@ def render_slide_4():
     draw.text((60, 130), "From PyTorch to Bare-Metal C++", font=t_font, fill=TEXT_PRIMARY)
     
     steps = [
-        ("01", "Dataset & Emotions", "Curated conversational dialogue + [HAPPY], [NEUTRAL] control tags."),
+        ("01", "Dataset Preparation", "Curated custom conversational dataset for companion robot interaction."),
         ("02", "PyTorch Training", "Trained 4-Layer Causal Transformer (1.84M params, 192 dim)."),
         ("03", "INT8 Quantization", "Compressed model from 7.02 MB -> 1.79 MB (100% FP32 fidelity)."),
         ("04", "Bare-Metal C++ Engine", "Custom forward pass and KV-cache without runtime framework bloat."),
