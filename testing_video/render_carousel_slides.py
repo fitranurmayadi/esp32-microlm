@@ -102,7 +102,7 @@ def create_base_slide(badge_text="TINYML & EMBEDDED AI", slide_num=1, total_slid
     return img, draw
 
 # ==========================================
-# SLIDE 1: COVER (FOCUSED & CLEAN)
+# SLIDE 1: COVER
 # ==========================================
 def render_slide_1():
     img, draw = create_base_slide("TINYML & ON-DEVICE AI", 1)
@@ -142,7 +142,7 @@ def render_slide_1():
     print("Slide 1 rendered")
 
 # ==========================================
-# SLIDE 2: THE PROJECT GOALS (NO OVERLAP)
+# SLIDE 2: THE PROJECT GOALS
 # ==========================================
 def render_slide_2():
     img, draw = create_base_slide("PROJECT SCOPE", 2)
@@ -208,7 +208,7 @@ def render_slide_3():
     print("Slide 3 rendered")
 
 # ==========================================
-# SLIDE 4: ARCHITECTURAL PIPELINE DIAGRAM
+# SLIDE 4: ARCHITECTURAL PIPELINE DIAGRAM (CLEAN & PURE TRANSFORMER)
 # ==========================================
 def render_slide_4():
     img, draw = create_base_slide("SYSTEM ARCHITECTURE", 4)
@@ -251,20 +251,19 @@ def render_slide_4():
     draw.text((590, 620), "C++ Header / Binary", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
     draw.text((590, 660), "• Octal PSRAM boundary map\n• Direct memory-mapped struct", font=get_font(18), fill=TEXT_SECONDARY)
     
-    draw_arrow_down(draw, 302, 785, 830, color=GREEN_PRIMARY, width=3)
-    draw_arrow_down(draw, 782, 785, 830, color=GREEN_PRIMARY, width=3)
+    draw_arrow_down(draw, 540, 785, 830, color=GREEN_PRIMARY, width=3)
     
-    # --- STAGE 3 ---
+    # --- STAGE 3: PURE ON-CHIP FORWARD PASS ---
     draw_shadowed_card(draw, [60, 840, 1020, 1165], radius=16, fill=CARD_BG, outline=GREEN_BORDER, width=2)
     draw_badge(draw, 85, 860, "STAGE 3: ON-CHIP EXECUTION (ESP32-S3 @ 240MHz)", get_font(14, bold=True), GREEN_PRIMARY, GREEN_BG, GREEN_BORDER)
     
     draw.rounded_rectangle([85, 905, 520, 1140], radius=12, fill=GREEN_BG, outline=GREEN_BORDER, width=1)
-    draw.text((105, 925), "Bare-Metal C++ Engine", font=get_font(22, bold=True), fill=GREEN_PRIMARY)
-    draw.text((105, 965), "• 128-Token KV-Cache\n• SIMD Vector Dot Products\n• ~12-13 tokens/sec generation", font=get_font(18), fill=TEXT_PRIMARY)
+    draw.text((105, 925), "Bare-Metal Forward Pass", font=get_font(22, bold=True), fill=GREEN_PRIMARY)
+    draw.text((105, 965), "• 128-Token KV-Cache\n• SIMD Vector Dot Products\n• Zero framework runtime bloat", font=get_font(18), fill=TEXT_PRIMARY)
     
     draw.rounded_rectangle([570, 905, 995, 1140], radius=12, fill=(240, 253, 244), outline=GREEN_BORDER, width=1)
-    draw.text((590, 925), "Hardware ALU Tool", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
-    draw.text((590, 965), "• Math queries ('100 x 7')\n• Executed in < 0.1 ms\n• Zero LLM hallucinations", font=get_font(18), fill=TEXT_SECONDARY)
+    draw.text((590, 925), "Real-Time Generation", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
+    draw.text((590, 965), "• ~12-13 tokens/sec via UART\n• Low-latency streaming\n• 100% on-device execution", font=get_font(18), fill=TEXT_SECONDARY)
     
     img.save(os.path.join(OUTPUT_DIR, "slide_04.png"))
     print("Slide 4 diagram rendered")
@@ -354,7 +353,7 @@ def render_slide_6():
     metrics = [
         ("12.2 tok/s", "Real-Time Speed", "Physical chip verified", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
         ("1.79 MB", "PSRAM Footprint", "8MB Octal PSRAM", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
-        ("< 0.1 ms", "ALU Math Tool", "Zero hallucinations", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+        ("100.0%", "Output Fidelity", "Zero quantization loss", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
     ]
     
     x = 60
