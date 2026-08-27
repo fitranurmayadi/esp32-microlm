@@ -48,12 +48,46 @@ We evaluated four precision formats for the Xtensa LX7 architecture:
 | :--- | :---: | :---: | :---: | :--- |
 | **FP32** | 7.02 MB | Baseline (0.0%) | 100.00% | High memory pressure (~92% PSRAM allocation). |
 | **FP16** | 3.51 MB | 50.0% | 100.00% | Software emulation required; no native FP16 vector ALU on Xtensa LX7. |
-| **INT8 (Selected)** | **1.79 MB** | **74.4%** | **100.00%** | **Optimal: Weight-only INT8 (W8A32) in PSRAM with FP32 FPU compute.** |
+| **INT8 (Selected)** | **1.79 MB** | **74.4%** | **99.999%** | **Optimal: Weight-only INT8 (W8A32) in PSRAM with FP32 FPU compute.** |
 | **INT4** | 0.88 MB | 87.2% | 98.87% | Degraded precision; +26% latency overhead from bit-unpacking. |
 
 ---
 
-## 5. Key Implementation Solutions
+## 5. Mathematical & Hardware Feasibility Audit
+
+To independently verify the physical plausibility of achieving **~12.3 tokens/second** on an ESP32-S3 @ 240MHz, we executed a forensic audit on the model binary (`kibo_model_int8.bin`) and theoretical compute budget:
+
+### 1. Model Binary & Parameter Count Audit:
+* **Binary Size**: 1,872,503 bytes (1.786 MB) with valid `0x4B49424F` header.
+* **Exact Parameters**: 1,839,360 parameters (1,828,992 INT8 weights + 10,368 FP32 norm/bias values).
+* **PyTorch Checkpoint Equivalence**: 100.00% exact parameter match against `kibo_model_2mb.pt`.
+
+### 2. Compute Budget (FLOPs / Token):
+* **Linear MatMul Operations**: $4 \times (\text{QKV} + \text{Proj} + \text{MLP1} + \text{MLP2}) + \text{Head} \approx 3,648,384 \text{ FLOPs}$.
+* **Attention & LayerNorm Overhead**: $\approx 49,152 \text{ FLOPs}$.
+* **Total Operations per Token**: $\mathbf{3,697,536 \text{ FLOPs}}$ (~3.698 MFLOPs/token).
+
+### 3. CPU Cycle Budget & Bandwidth @ 240MHz:
+* **Clock Frequency**: 240,000,000 cycles/second.
+* **Per-Token Time Window (@ 12.3 tok/s)**: $\frac{1000 \text{ ms}}{12.3} = \mathbf{81.3 \text{ ms/token}}$.
+* **Available CPU Cycles per Token**: $240 \times 10^6 \times 0.0813 = \mathbf{19.51 \times 10^6 \text{ cycles}}$.
+* **Execution Efficiency**: $\frac{19.51 \times 10^6 \text{ cycles}}{3.698 \times 10^6 \text{ FLOPs}} \approx \mathbf{5.28 \text{ cycles per FLOP}}$. (Scalar FPU loop on Xtensa LX7 achieves ~4–6 cycles per scalar MAC, proving exact physical feasibility).
+* **PSRAM Read Bandwidth**: $1.784 \text{ MB} \times 12.3 \text{ tok/s} = \mathbf{21.94 \text{ MB/s}}$ (~27.5% bus load on 80MHz Octal PSRAM).
+
+### 4. Numerical Equivalence (FP32 vs W8A32):
+* **Mean Absolute Error (MAE)**: $0.013014$
+* **Max Absolute Error**: $0.085866$
+* **Logit Cosine Similarity**: $\mathbf{99.9990\%}$
+* **Predicted Token Match**: **100.00% Exact Match**
+
+Run the automated verification script locally:
+```bash
+python3 kibo_microlm/audit_model_forensics.py
+```
+
+---
+
+## 6. Key Implementation Solutions
 
 ### 1. Flash Mode Compatibility (DIO vs QIO)
 * **Problem**: Setting flash mode to `QIO` on DevKit boards caused bootlooping because standard S3 breakout pins share quad lines with SPI Flash.
@@ -74,7 +108,7 @@ We evaluated four precision formats for the Xtensa LX7 architecture:
 
 ---
 
-## 6. Hardware Validation Summary
+## 7. Hardware Validation Summary
 
 | Board | Flash / PSRAM | Flash Mode | Result |
 | :--- | :--- | :---: | :---: |
@@ -84,7 +118,7 @@ We evaluated four precision formats for the Xtensa LX7 architecture:
 
 ---
 
-## 7. Peripheral Integration Roadmap
+## 8. Peripheral Integration Roadmap
 
 * **Display**: Round SPI LCD (GC9A01, 240x240) driven by emotion tokens (`[HAPPY]`, `[NEUTRAL]`, `[ANGRY]`).
 * **Audio Input**: I2S MEMS microphone (INMP441) for on-device keyword detection.

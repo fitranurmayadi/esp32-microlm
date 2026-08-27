@@ -149,16 +149,16 @@ def run_benchmark():
         
         if name == "FP32":
             esp_status = "High Footprint (92% PSRAM)"
-            alu_eff = "Standard FPU (7.02MB payload)"
+            alu_eff = "FP32 weights + FP32 FPU compute"
         elif name == "FP16":
             esp_status = "Emulated (46% PSRAM)"
-            alu_eff = "Software emulation (No FP16 ALU)"
+            alu_eff = "Software emulation (No FP16 ALU on LX7)"
         elif name == "INT8":
-            esp_status = "Optimal (1.79 MB)"
-            alu_eff = "Direct byte-aligned SIMD MAC"
+            esp_status = "Optimal (1.79 MB in PSRAM)"
+            alu_eff = "W8A32: 1-Byte PSRAM read, FP32 FPU compute"
         else: # INT4
             esp_status = "Unpack Overhead"
-            alu_eff = "Bit-mask and shift overhead per nibble"
+            alu_eff = "W4A32: Bit-mask & shift unpack overhead"
             
         print(f"{name:<6} | {size_str:<12} | {ratio:>10.1f}% | {data['cosine_sim']*100:>15.2f}% | {esp_status:<24} | {alu_eff}")
     print("="*96)
