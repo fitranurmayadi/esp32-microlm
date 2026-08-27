@@ -176,6 +176,26 @@ Kibo: [NEUTRAL] Goodbye! See you next time my friend! Stay awesome!
 
 ---
 
+## Project Status & Roadmap (v1.0 Milestone)
+
+This repository represents the **initial proof-of-concept (v1.0)** for running a self-contained generative Transformer on ESP32-S3 microcontrollers. The current architecture establishes a stable, working baseline with pure bare-metal C++, weight-only memory compression (W8A32), and hybrid tool dispatch.
+
+### Current Milestone (v1.0):
+* [x] **Bare-Metal Engine**: 1.84M Causal Transformer forward pass in standalone C++ without ML frameworks.
+* [x] **Memory Efficiency**: Weight-only INT8 quantization (W8A32) in Octal PSRAM (1.79 MB footprint).
+* [x] **Dynamic KV-Cache**: 128-token context buffer in PSRAM with SRAM fallback.
+* [x] **Real-Time Speed**: Measured ~12.3 tokens/second on physical ESP32-S3 hardware @ 240MHz.
+* [x] **Hybrid Tooling**: Deterministic arithmetic evaluation in <0.1 ms to avoid hallucinations.
+* [x] **Multi-Board Support**: Verified on DevKit N16R8, Arduino Nano ESP32, and Seeed XIAO S3.
+
+### Future Roadmap (v2.0+):
+* [ ] **Xtensa SIMD Intrinsics**: Implement 128-bit PIE vector assembly for full INT8 (W8A8) compute acceleration.
+* [ ] **Fixed-Point Quantization**: Integer lookup tables for Softmax and LayerNorm.
+* [ ] **Broader Dataset & QAT**: Expanded multi-turn dialogues with Quantization-Aware Training.
+* [ ] **Robot Peripherals**: SPI circular LCD eye expressions (GC9A01) and I2S voice input/output.
+
+---
+
 ## License
 
-Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

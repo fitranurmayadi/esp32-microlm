@@ -105,6 +105,26 @@ Kibo: [NEUTRAL] Sampai jumpa sahabatku! Tetap semangat dan jaga kesehatan ya!
 
 ---
 
+## Status Proyek & Rencana Pengembangan (Milestone v1.0)
+
+Repositori ini merupakan **tahap inisiasi / pembuktian konsep awal (v1.0)** untuk menjalankan model bahasa Transformer secara mandiri pada mikrokontroler ESP32-S3. Arsitektur saat ini berfokus pada kesederhanaan kode C++ bare-metal, kompresi memori bobot (W8A32), dan integrasi *hybrid tool* yang stabil.
+
+### Pencapaian Saat Ini (Milestone v1.0):
+* [x] **Engine Bare-Metal**: Forward pass Causal Transformer 1.84M murni C++ tanpa dependensi framework ML.
+* [x] **Efisiensi Memori**: Kuantisasi bobot INT8 (W8A32) di Octal PSRAM (ukuran file 1.79 MB).
+* [x] **Manajemen KV-Cache**: Buffer konteks 128 token dinamis di PSRAM dengan mekanisme fallback SRAM.
+* [x] **Kecepatan Real-Time**: Terukur stabil di ~12.3 token/detik pada perangkat keras ESP32-S3 (240MHz).
+* [x] **Arsitektur Hybrid**: Eksekusi aritmatika deterministik instan (<0.1 ms) untuk mencegah halusinasi angka.
+* [x] **Dukungan Multi-Board**: Tervalidasi pada DevKit N16R8, Arduino Nano ESP32, dan Seeed XIAO S3.
+
+### Rencana Pengembangan Mendatang (Roadmap v2.0+):
+* [ ] **Akselerasi SIMD Xtensa**: Menerapkan instruksi assembly vektor 128-bit PIE untuk komputasi Full INT8 (W8A8).
+* [ ] **Kuantisasi Fixed-Point**: Tabel lookup integer murni untuk Softmax dan LayerNorm.
+* [ ] **Ekspansi Dataset & QAT**: Dataset percakapan yang lebih kaya dengan pelatihan *Quantization-Aware Training*.
+* [ ] **Integrasi Periferal Robot**: Tampilan ekspresi mata pada LCD bulat SPI (GC9A01) dan modul suara I2S.
+
+---
+
 ## Lisensi
 
 Didistribusikan di bawah lisensi MIT. Lihat file [`LICENSE`](../LICENSE) untuk detail lengkap.
