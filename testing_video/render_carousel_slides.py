@@ -141,7 +141,7 @@ def generate_light_benchmark_chart():
     return chart_path
 
 # ==========================================
-# SLIDE 1: COVER (WITH CUSTOM ESP32-S3-N16R8 PHOTO)
+# SLIDE 1: COVER (PERFECT TRUE ASPECT RATIO)
 # ==========================================
 def render_slide_1():
     img, draw = create_base_slide("TINYML & ON-DEVICE AI", 1)
@@ -157,11 +157,12 @@ def render_slide_1():
     # Outer Card
     draw_shadowed_card(draw, [60, 420, 1020, 1180], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=1)
     
-    dev_path = os.path.join(ASSETS_DIR, "esp32s3_devkit.jpg")
+    dev_path = os.path.join(ASSETS_DIR, "esp32s3_devkit_tight.jpg")
     if os.path.exists(dev_path):
         hw_img = Image.open(dev_path).convert("RGB")
-        hw_img = hw_img.resize((310, 620), Image.Resampling.LANCZOS)
-        img.paste(hw_img, (110, 480))
+        # True physical aspect ratio (width: 275, height: 628)
+        hw_img = hw_img.resize((275, 628), Image.Resampling.LANCZOS)
+        img.paste(hw_img, (110, 485))
         
         # Spec cards on the right
         specs_side = [
@@ -171,13 +172,13 @@ def render_slide_1():
             ("INFERENCE SPEED", "12 to 13 tokens/sec", "~80 ms per token real-time generation", TEXT_PRIMARY, (241, 245, 249), CARD_BORDER),
         ]
         
-        sy = 480
+        sy = 485
         for tag, title, desc, col, bg_col, b_col in specs_side:
-            draw.rounded_rectangle([460, sy, 980, sy + 140], radius=12, fill=bg_col, outline=b_col, width=1)
-            draw.text((485, sy + 18), tag, font=get_font(15, bold=True), fill=col)
-            draw.text((485, sy + 48), title, font=get_font(23, bold=True), fill=TEXT_PRIMARY)
-            draw.text((485, sy + 88), desc, font=get_font(18), fill=TEXT_SECONDARY)
-            sy += 160
+            draw.rounded_rectangle([430, sy, 980, sy + 138], radius=12, fill=bg_col, outline=b_col, width=1)
+            draw.text((455, sy + 18), tag, font=get_font(15, bold=True), fill=col)
+            draw.text((455, sy + 48), title, font=get_font(23, bold=True), fill=TEXT_PRIMARY)
+            draw.text((455, sy + 88), desc, font=get_font(18), fill=TEXT_SECONDARY)
+            sy += 162
             
     img.save(os.path.join(OUTPUT_DIR, "slide_01.png"))
     print("Slide 1 rendered")
@@ -367,7 +368,7 @@ def render_slide_7():
     draw.text((60, 130), "Validated on 3 Form Factors", font=t_font, fill=TEXT_PRIMARY)
     
     boards = [
-        ("ESP32-S3 DevKit N16R8", "16MB Flash | 8MB Octal PSRAM", "esp32s3_devkit_horiz.jpg"),
+        ("ESP32-S3 DevKit N16R8", "16MB Flash | 8MB Octal PSRAM", "esp32s3_devkit_tight_horiz.jpg"),
         ("Arduino Nano ESP32", "16MB Flash | 8MB Octal PSRAM", "arduino_nano_esp32.jpg"),
         ("Seeed Studio XIAO S3", "8MB Flash | 8MB Octal PSRAM", "seeed_xiao_esp32s3.jpg"),
     ]
@@ -379,8 +380,8 @@ def render_slide_7():
         photo_path = os.path.join(ASSETS_DIR, photo_file)
         if os.path.exists(photo_path):
             b_img = Image.open(photo_path).convert("RGB")
-            b_img = b_img.resize((210, 105) if "devkit" in photo_file else (210, 155), Image.Resampling.LANCZOS)
-            img.paste(b_img, (80, y + 45 if "devkit" in photo_file else y + 20))
+            b_img = b_img.resize((210, 92) if "devkit" in photo_file else (210, 155), Image.Resampling.LANCZOS)
+            img.paste(b_img, (80, y + 50 if "devkit" in photo_file else y + 20))
             
         draw.text((320, y + 35), name, font=get_font(27, bold=True), fill=TEXT_PRIMARY)
         draw.text((320, y + 80), specs, font=get_font(21), fill=BLUE_PRIMARY)
