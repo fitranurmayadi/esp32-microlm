@@ -33,10 +33,6 @@ GREEN_PRIMARY = (5, 150, 105)   # #059669
 GREEN_BG = (209, 250, 229)      # #D1FAE5
 GREEN_BORDER = (167, 243, 208)  # #A7F3D0
 
-PURPLE_PRIMARY = (124, 58, 237) # #7C3AED
-PURPLE_BG = (243, 232, 255)     # #F3E8FF
-PURPLE_BORDER = (216, 180, 254) # #D8B4FE
-
 # Fonts
 FONT_REGULAR = "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"
 FONT_BOLD = "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf"
@@ -72,7 +68,6 @@ def draw_badge(draw, x, y, text, font, text_color, bg_color, border_color):
 
 def draw_arrow_down(draw, cx, y_start, y_end, color=BLUE_PRIMARY, width=3):
     draw.line([cx, y_start, cx, y_end], fill=color, width=width)
-    # Arrow head
     draw.polygon([
         (cx, y_end + 8),
         (cx - 7, y_end - 4),
@@ -107,7 +102,7 @@ def create_base_slide(badge_text="TINYML & EMBEDDED AI", slide_num=1, total_slid
     return img, draw
 
 # ==========================================
-# SLIDE 1: COVER
+# SLIDE 1: COVER (FOCUSED & CLEAN)
 # ==========================================
 def render_slide_1():
     img, draw = create_base_slide("TINYML & ON-DEVICE AI", 1)
@@ -118,7 +113,7 @@ def render_slide_1():
     draw.text((60, 270), "on the ESP32-S3", font=t_font, fill=TEXT_PRIMARY)
     
     sub_font = get_font(23, bold=False)
-    draw.text((60, 360), "100% Offline  •  Bare-Metal C++  •  ~12-13 tokens/sec", font=sub_font, fill=TEXT_SECONDARY)
+    draw.text((60, 360), "Bare-Metal C++ Forward Pass  •  ~12-13 tokens/sec", font=sub_font, fill=TEXT_SECONDARY)
     
     draw_shadowed_card(draw, [60, 420, 1020, 1180], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=1)
     
@@ -129,10 +124,10 @@ def render_slide_1():
         img.paste(hw_img, (110, 485))
         
         specs_side = [
-            ("N16R8 MODULE", "ESP32-S3-WROOM-1", "16MB Flash | 8MB Octal PSRAM", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
-            ("COMPUTE ENGINE", "Dual-Core Xtensa LX7", "Clocked @ 240MHz (Bare-metal C++)", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
-            ("ON-CHIP MODEL", "1.84M Transformer", "INT8 Quantized (1.79 MB in PSRAM)", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
-            ("INFERENCE SPEED", "12 to 13 tokens/sec", "~80 ms per token real-time generation", TEXT_PRIMARY, (241, 245, 249), CARD_BORDER),
+            ("TARGET SILICON", "ESP32-S3-WROOM-1", "Dual-Core Xtensa LX7 @ 240MHz", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
+            ("OCTAL MEMORY", "16MB Flash | 8MB PSRAM", "80MHz High-Speed Memory Bus", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
+            ("QUANTIZED PAYLOAD", "1.79 MB INT8 Model", "Directly mapped in Octal PSRAM", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+            ("SYSTEM FOOTPRINT", "Zero Runtime Overhead", "Pure C++ without TFLite or ONNX", TEXT_PRIMARY, (241, 245, 249), CARD_BORDER),
         ]
         
         sy = 485
@@ -147,18 +142,18 @@ def render_slide_1():
     print("Slide 1 rendered")
 
 # ==========================================
-# SLIDE 2: THE MOTIVATION (CLEAN & CONCISE)
+# SLIDE 2: THE PROJECT GOALS (NO OVERLAP)
 # ==========================================
 def render_slide_2():
-    img, draw = create_base_slide("THE MOTIVATION & PERSONA", 2)
+    img, draw = create_base_slide("PROJECT SCOPE", 2)
     
     t_font = get_font(48, bold=True)
-    draw.text((60, 130), "Brain for a Mini Desktop Robot", font=t_font, fill=TEXT_PRIMARY)
+    draw.text((60, 130), "Companion Robot Intelligence", font=t_font, fill=TEXT_PRIMARY)
     
     cards = [
-        ("THE GOAL", "On-Device Generative AI", "Running an autoregressive Causal Transformer locally on ESP32-S3 silicon.", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
-        ("THE PERSONA", "Meet Kibo (希望 - Hope)", "Interactive conversational companion robot persona running on-chip.", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
-        ("THE FRAMEWORK", "ESP32 Micro-LM Engine", "A lightweight, modular, bare-metal C++ inference engine designed for microcontrollers.", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+        ("THE GOAL", "On-Device Generative AI", "Executing an autoregressive transformer locally on microcontroller silicon.", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
+        ("THE PERSONA", "Meet Kibo (希望 - Hope)", "Lightweight conversational companion robot persona running on-chip.", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
+        ("THE FRAMEWORK", "ESP32 Micro-LM Engine", "A lightweight, modular, and extensible C++ inference engine.", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
     ]
     
     y = 220
@@ -182,18 +177,18 @@ def render_slide_2():
     print("Slide 2 rendered")
 
 # ==========================================
-# SLIDE 3: ON-CHIP ARCHITECTURE
+# SLIDE 3: HARDWARE CONSTRAINTS & BUDGET
 # ==========================================
 def render_slide_3():
-    img, draw = create_base_slide("ON-CHIP ARCHITECTURE", 3)
+    img, draw = create_base_slide("HARDWARE CONSTRAINTS", 3)
     
     t_font = get_font(48, bold=True)
     draw.text((60, 130), "ESP32-S3 Hardware Limits", font=t_font, fill=TEXT_PRIMARY)
     
     cards = [
-        ("COMPUTE ENGINE", "240 MHz", "Dual-Core Xtensa LX7", "• Bare-metal C++ execution (Zero framework bloat)\n• SIMD-aligned vector dot products\n• Deterministic timing with zero garbage collection", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
-        ("MEMORY ALLOCATION", "8 MB", "Octal PSRAM (80MHz)", "• 1.79 MB INT8 Model Weights in PSRAM\n• Dynamic 128-token Key-Value (KV) Cache\n• Zero-wait working buffers for multi-head attention", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
-        ("MODEL ARCHITECTURE", "1.84M", "Causal Transformer Parameters", "• 4 Transformer Layers | 192 Dim | 4 Heads\n• 91 Vocabulary Tokens\n• Autonomous local execution on Xtensa LX7 core", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+        ("COMPUTE ENGINE", "240 MHz", "Xtensa Dual-Core LX7", "• SIMD-aligned vector dot-products\n• Deterministic cycle execution without garbage collection", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
+        ("MEMORY BUDGET", "8 MB", "Octal PSRAM (80MHz)", "• 1.79 MB Model Weights (INT8)\n• Dynamic 128-token Key-Value (KV) working cache", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
+        ("INTERNAL SRAM", "380 KB", "Internal SRAM Pool", "• ~75 KB runtime heap allocation\n• Leaves 300+ KB free for peripherals and sensors", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
     ]
     
     y = 220
@@ -224,56 +219,45 @@ def render_slide_4():
     sub_font = get_font(21, bold=False)
     draw.text((60, 185), "Workflow from Host Training to On-Chip Microcontroller Execution:", font=sub_font, fill=TEXT_SECONDARY)
     
-    # 3 Main Pipeline Tiers / Containers
-    
-    # --- TIER 1: HOST TRAINING (PC / PYTORCH) ---
+    # --- STAGE 1 ---
     draw_shadowed_card(draw, [60, 230, 1020, 480], radius=16, fill=CARD_BG, outline=BLUE_BORDER, width=1)
     draw_badge(draw, 85, 250, "STAGE 1: MODEL TRAINING (HOST)", get_font(14, bold=True), BLUE_PRIMARY, BLUE_BG, BLUE_BORDER)
     
-    # Left box: Dataset
     draw.rounded_rectangle([85, 295, 520, 455], radius=12, fill=(248, 250, 252), outline=CARD_BORDER, width=1)
     draw.text((105, 315), "Dialogue Dataset", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
     draw.text((105, 355), "• Domain robot dialogues\n• 91 Byte-pair token vocab", font=get_font(18), fill=TEXT_SECONDARY)
     
-    # Connector Arrow inside Tier 1
     draw.line([520, 375, 560, 375], fill=BLUE_PRIMARY, width=3)
     draw.polygon([(570, 375), (558, 368), (558, 382)], fill=BLUE_PRIMARY)
     
-    # Right box: PyTorch Transformer
     draw.rounded_rectangle([570, 295, 995, 455], radius=12, fill=(248, 250, 252), outline=CARD_BORDER, width=1)
     draw.text((590, 315), "PyTorch Transformer", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
     draw.text((590, 355), "• 4 Layers | 192 Dim | 4 Heads\n• 1.84M Parameters (FP32)", font=get_font(18), fill=TEXT_SECONDARY)
     
-    # Arrow between Tier 1 and Tier 2
     draw_arrow_down(draw, 540, 480, 525, color=AMBER_PRIMARY, width=3)
     
-    # --- TIER 2: QUANTIZATION & EXPORT ---
+    # --- STAGE 2 ---
     draw_shadowed_card(draw, [60, 535, 1020, 785], radius=16, fill=CARD_BG, outline=AMBER_BORDER, width=1)
     draw_badge(draw, 85, 555, "STAGE 2: QUANTIZATION & PACKAGING", get_font(14, bold=True), AMBER_PRIMARY, AMBER_BG, AMBER_BORDER)
     
-    # Left box: INT8 Quantization
     draw.rounded_rectangle([85, 600, 520, 760], radius=12, fill=(255, 251, 235), outline=AMBER_BORDER, width=1)
     draw.text((105, 620), "Symmetric INT8", font=get_font(22, bold=True), fill=AMBER_PRIMARY)
     draw.text((105, 660), "• 7.02 MB -> 1.79 MB (74.4%)\n• 100.00% FP32 output fidelity", font=get_font(18), fill=TEXT_SECONDARY)
     
-    # Connector Arrow inside Tier 2
     draw.line([520, 680, 560, 680], fill=AMBER_PRIMARY, width=3)
     draw.polygon([(570, 680), (558, 673), (558, 687)], fill=AMBER_PRIMARY)
     
-    # Right box: Binary Serialization
     draw.rounded_rectangle([570, 600, 995, 760], radius=12, fill=(255, 251, 235), outline=AMBER_BORDER, width=1)
     draw.text((590, 620), "C++ Header / Binary", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
     draw.text((590, 660), "• Octal PSRAM boundary map\n• Direct memory-mapped struct", font=get_font(18), fill=TEXT_SECONDARY)
     
-    # Dual Arrows between Tier 2 and Tier 3
     draw_arrow_down(draw, 302, 785, 830, color=GREEN_PRIMARY, width=3)
     draw_arrow_down(draw, 782, 785, 830, color=GREEN_PRIMARY, width=3)
     
-    # --- TIER 3: ON-CHIP EXECUTION (ESP32-S3) ---
+    # --- STAGE 3 ---
     draw_shadowed_card(draw, [60, 840, 1020, 1165], radius=16, fill=CARD_BG, outline=GREEN_BORDER, width=2)
     draw_badge(draw, 85, 860, "STAGE 3: ON-CHIP EXECUTION (ESP32-S3 @ 240MHz)", get_font(14, bold=True), GREEN_PRIMARY, GREEN_BG, GREEN_BORDER)
     
-    # Dual Engine Paths (Bare-metal C++ & Hardware ALU)
     draw.rounded_rectangle([85, 905, 520, 1140], radius=12, fill=GREEN_BG, outline=GREEN_BORDER, width=1)
     draw.text((105, 925), "Bare-Metal C++ Engine", font=get_font(22, bold=True), fill=GREEN_PRIMARY)
     draw.text((105, 965), "• 128-Token KV-Cache\n• SIMD Vector Dot Products\n• ~12-13 tokens/sec generation", font=get_font(18), fill=TEXT_PRIMARY)
