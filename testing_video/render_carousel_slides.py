@@ -94,53 +94,6 @@ def create_base_slide(badge_text="TINYML & EMBEDDED AI", slide_num=1, total_slid
     return img, draw
 
 # ==========================================
-# LIGHT MATPLOTLIB CHART
-# ==========================================
-def generate_light_benchmark_chart():
-    chart_path = os.path.join(ASSETS_DIR, "benchmark_chart_light.png")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.2, 4.4), facecolor='#FFFFFF')
-    
-    formats = ['INT8 (Selected)', 'INT4 (Nibble)']
-    latencies = [6557, 8264]
-    sizes = [1.79, 0.88]
-    
-    bars1 = ax1.bar(formats, latencies, color=['#0284C7', '#D97706'], width=0.50, edgecolor='#E2E8F0', linewidth=1)
-    ax1.set_facecolor('#F8FAFC')
-    ax1.set_title('MatMul Latency (Lower is Faster)', color='#0F172A', fontsize=13, pad=12, fontweight='bold')
-    ax1.set_ylabel('Execution Time (microseconds)', color='#475569', fontsize=10)
-    ax1.tick_params(colors='#475569', labelsize=10)
-    ax1.grid(axis='y', linestyle='--', alpha=0.5, color='#CBD5E1')
-    ax1.set_ylim(0, 10500)
-    
-    for bar, lat in zip(bars1, latencies):
-        yval = bar.get_height()
-        speed_str = "1.00x (Baseline)" if lat == 6557 else "+26% Slower"
-        color = '#0369A1' if lat == 6557 else '#B45309'
-        ax1.text(bar.get_x() + bar.get_width()/2.0, yval + 300, f"{lat:,} us\n({speed_str})", ha='center', va='bottom', color=color, fontsize=10.5, fontweight='bold')
-        
-    bars2 = ax2.bar(formats, sizes, color=['#059669', '#F59E0B'], width=0.50, edgecolor='#E2E8F0', linewidth=1)
-    ax2.set_facecolor('#F8FAFC')
-    ax2.set_title('Octal PSRAM Footprint (MB)', color='#0F172A', fontsize=13, pad=12, fontweight='bold')
-    ax2.set_ylabel('Model Size (MB)', color='#475569', fontsize=10)
-    ax2.tick_params(colors='#475569', labelsize=10)
-    ax2.grid(axis='y', linestyle='--', alpha=0.5, color='#CBD5E1')
-    ax2.set_ylim(0, 2.4)
-    
-    for bar, sz in zip(bars2, sizes):
-        yval = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width()/2.0, yval + 0.08, f"{sz:.2f} MB", ha='center', va='bottom', color='#0F172A', fontsize=11, fontweight='bold')
-        
-    for spine in ax1.spines.values():
-        spine.set_color('#CBD5E1')
-    for spine in ax2.spines.values():
-        spine.set_color('#CBD5E1')
-        
-    plt.tight_layout()
-    plt.savefig(chart_path, dpi=200, facecolor=fig.get_facecolor(), edgecolor='none')
-    plt.close()
-    return chart_path
-
-# ==========================================
 # SLIDE 1: COVER
 # ==========================================
 def render_slide_1():
@@ -279,37 +232,63 @@ def render_slide_4():
     print("Slide 4 rendered")
 
 # ==========================================
-# SLIDE 5: INT8 vs INT4 BENCHMARK
+# SLIDE 5: CLEAN BENCHMARK TABLE (FP32, FP16, INT8, INT4)
 # ==========================================
 def render_slide_5():
-    img, draw = create_base_slide("EMPIRICAL HARDWARE BENCHMARK", 5)
+    img, draw = create_base_slide("QUANTIZATION BENCHMARK", 5)
     
     t_font = get_font(48, bold=True)
-    draw.text((60, 130), "The INT8 vs INT4 Paradox on MCU", font=t_font, fill=TEXT_PRIMARY)
+    draw.text((60, 130), "Model Quantization Benchmark", font=t_font, fill=TEXT_PRIMARY)
     
     sub_font = get_font(21, bold=False)
-    draw.text((60, 195), "On-chip MatMul profiling on ESP32-S3 @ 240MHz (147,456 weights):", font=sub_font, fill=TEXT_SECONDARY)
+    draw.text((60, 195), "Evaluation across 4 precision formats on 1.84M parameters:", font=sub_font, fill=TEXT_SECONDARY)
     
-    chart_path = generate_light_benchmark_chart()
-    if os.path.exists(chart_path):
-        chart_img = Image.open(chart_path).convert("RGB")
-        chart_img = chart_img.resize((960, 440), Image.Resampling.LANCZOS)
-        draw_shadowed_card(draw, [60, 235, 1020, 695], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=1)
-        img.paste(chart_img, (60, 245))
+    # Main Table Outer Card
+    draw_shadowed_card(draw, [60, 245, 1020, 920], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=1)
+    
+    # Table Header Row
+    draw.rounded_rectangle([60, 245, 1020, 315], radius=16, fill=(241, 245, 249))
+    draw.text((90, 268), "Format", font=get_font(18, bold=True), fill=TEXT_PRIMARY)
+    draw.text((250, 268), "Model Size", font=get_font(18, bold=True), fill=TEXT_PRIMARY)
+    draw.text((430, 268), "Compression", font=get_font(18, bold=True), fill=TEXT_PRIMARY)
+    draw.text((630, 268), "Cosine Sim", font=get_font(18, bold=True), fill=TEXT_PRIMARY)
+    draw.text((820, 268), "Status", font=get_font(18, bold=True), fill=TEXT_PRIMARY)
+    
+    rows = [
+        ("FP32", "7.02 MB", "0.0% (Base)", "100.00%", "High PSRAM load", TEXT_SECONDARY, CARD_BG, CARD_BORDER, False),
+        ("FP16", "3.51 MB", "50.0%", "100.00%", "Software emulated", TEXT_SECONDARY, CARD_BG, CARD_BORDER, False),
+        ("INT8", "1.79 MB", "74.4%", "100.00%", "Selected (Optimal)", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER, True),
+        ("INT4", "0.88 MB", "87.2%", "98.87%", "+26% unpack latency", AMBER_PRIMARY, CARD_BG, CARD_BORDER, False),
+    ]
+    
+    ry = 325
+    for fmt, size, comp, sim, status, col, bg_col, b_col, is_selected in rows:
+        if is_selected:
+            draw.rounded_rectangle([70, ry, 1010, ry + 125], radius=12, fill=bg_col, outline=b_col, width=2)
+            draw.text((90, ry + 25), fmt, font=get_font(28, bold=True, mono=True), fill=col)
+            draw.text((90, ry + 75), "(Selected)", font=get_font(15, bold=True), fill=col)
+            draw.text((250, ry + 45), size, font=get_font(24, bold=True), fill=TEXT_PRIMARY)
+            draw.text((430, ry + 45), comp, font=get_font(24, bold=True), fill=TEXT_PRIMARY)
+            draw.text((630, ry + 45), sim, font=get_font(24, bold=True), fill=GREEN_PRIMARY)
+            draw.text((820, ry + 45), status, font=get_font(20, bold=True), fill=col)
+        else:
+            draw.rounded_rectangle([70, ry, 1010, ry + 125], radius=12, fill=bg_col, outline=b_col, width=1)
+            draw.text((90, ry + 45), fmt, font=get_font(26, bold=True, mono=True), fill=col)
+            draw.text((250, ry + 45), size, font=get_font(23), fill=TEXT_PRIMARY)
+            draw.text((430, ry + 45), comp, font=get_font(23), fill=TEXT_PRIMARY)
+            draw.text((630, ry + 45), sim, font=get_font(23), fill=GREEN_PRIMARY if "100" in sim else TEXT_SECONDARY)
+            draw.text((820, ry + 45), status, font=get_font(18), fill=TEXT_SECONDARY)
+        ry += 140
         
-    draw_shadowed_card(draw, [60, 725, 1020, 1165], radius=16, fill=CARD_BG, outline=BLUE_BORDER, width=2)
-    draw_badge(draw, 90, 755, "KEY HARDWARE FINDING", get_font(16, bold=True), BLUE_PRIMARY, BLUE_BG, BLUE_BORDER)
-    
-    draw.text((90, 815), "INT8 is 26% faster than INT4 on Xtensa LX7", font=get_font(27, bold=True), fill=TEXT_PRIMARY)
-    
-    insight_text = (
-        "• Without a dedicated NPU, INT4 forces the CPU to unpack each nibble\n"
-        "  using bit-masking (& 0x0F) and bit-shifting (>> 4).\n\n"
-        "• This ALU unpacking overhead wastes more CPU cycles than the memory\n"
-        "  bandwidth savings it provides.\n\n"
-        "• Byte-aligned INT8 remains the optimal sweet spot for microcontrollers!"
+    # Bottom Key Finding Card
+    draw_shadowed_card(draw, [60, 945, 1020, 1165], radius=16, fill=CARD_BG, outline=BLUE_BORDER, width=2)
+    draw_badge(draw, 90, 970, "KEY BENCHMARK TAKEAWAY", get_font(15, bold=True), BLUE_PRIMARY, BLUE_BG, BLUE_BORDER)
+    draw.text((90, 1025), "INT8 Delivers the Optimal Balance for ESP32-S3", font=get_font(24, bold=True), fill=TEXT_PRIMARY)
+    takeaway = (
+        "• INT8 reduces PSRAM footprint by 74.4% while preserving 100.00% FP32 output quality.\n"
+        "• Byte-aligned SIMD execution provides maximum inference throughput (~12-13 tok/s)."
     )
-    draw.text((90, 875), insight_text, font=get_font(21), fill=TEXT_SECONDARY)
+    draw.text((90, 1070), takeaway, font=get_font(19), fill=TEXT_SECONDARY)
     
     img.save(os.path.join(OUTPUT_DIR, "slide_05.png"))
     print("Slide 5 rendered")
@@ -384,7 +363,6 @@ def render_slide_7():
         draw.text((320, y + 125), "✓ 100% Tested & Verified on Hardware", font=get_font(18, bold=True), fill=GREEN_PRIMARY)
         y += 225
         
-    # Clean CTA Card
     draw_shadowed_card(draw, [60, 915, 1020, 1165], radius=16, fill=BLUE_BG, outline=BLUE_BORDER, width=2)
     draw.text((95, 940), "100% Open Source on GitHub (MIT License)", font=get_font(25, bold=True), fill=BLUE_PRIMARY)
     draw.text((95, 985), "github.com/fitranurmayadi/esp32-microlm", font=get_font(25, bold=True, mono=True), fill=TEXT_PRIMARY)
