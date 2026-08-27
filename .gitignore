@@ -21,3 +21,12 @@ venv/
 .DS_Store
 *.swp
 *~
+
+# Presentation and social media assets (kept locally)
+testing_video/assets/
+testing_video/carousel_slides/
+testing_video/generate_*.py
+testing_video/render_carousel_slides.py
+testing_video/demo_thumbnail.png
+testing_video/kibo_demo.gif
+testing_video/kibo_terminal_cropped.mp4
