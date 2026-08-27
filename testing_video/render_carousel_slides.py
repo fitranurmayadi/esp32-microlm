@@ -10,28 +10,28 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # Slide Dimensions (LinkedIn 4:5 Portrait Carousel)
 W, H = 1080, 1350
 
-# Modern Light Mode Editorial Palette
-BG_CANVAS = (248, 250, 252)     # #F8FAFC Slate 50
-CARD_BG = (255, 255, 255)       # #FFFFFF Pure White
-CARD_BORDER = (226, 232, 240)   # #E2E8F0 Slate 200
-CARD_BORDER_DARK = (203, 213, 225) # #CBD5E1 Slate 300
+# Modern Light Mode Minimalist Palette
+BG_CANVAS = (248, 250, 252)     # #F8FAFC
+CARD_BG = (255, 255, 255)       # #FFFFFF
+CARD_BORDER = (226, 232, 240)   # #E2E8F0
+CARD_BORDER_DARK = (203, 213, 225) # #CBD5E1
 
-TEXT_PRIMARY = (15, 23, 42)     # #0F172A Slate 900 (Deep Charcoal)
-TEXT_SECONDARY = (71, 85, 105)  # #475569 Slate 600
-TEXT_MUTED = (100, 116, 139)    # #64748B Slate 500
+TEXT_PRIMARY = (15, 23, 42)     # #0F172A (Deep Slate)
+TEXT_SECONDARY = (71, 85, 105)  # #475569
+TEXT_MUTED = (100, 116, 139)    # #64748B
 
-# Accent Colors
-BLUE_PRIMARY = (2, 132, 199)    # #0284C7 Sky 600
-BLUE_BG = (224, 242, 254)       # #E0F2FE Sky 100
-BLUE_BORDER = (186, 230, 253)   # #BAE6FD Sky 200
+# Accents
+BLUE_PRIMARY = (2, 132, 199)    # #0284C7
+BLUE_BG = (224, 242, 254)       # #E0F2FE
+BLUE_BORDER = (186, 230, 253)   # #BAE6FD
 
-AMBER_PRIMARY = (217, 119, 6)   # #D97706 Amber 600
-AMBER_BG = (254, 243, 199)      # #FEF3C7 Amber 100
-AMBER_BORDER = (253, 230, 138)  # #FDE68A Amber 200
+AMBER_PRIMARY = (217, 119, 6)   # #D97706
+AMBER_BG = (254, 243, 199)      # #FEF3C7
+AMBER_BORDER = (253, 230, 138)  # #FDE68A
 
-GREEN_PRIMARY = (5, 150, 105)   # #059669 Emerald 600
-GREEN_BG = (209, 250, 229)      # #D1FAE5 Emerald 100
-GREEN_BORDER = (167, 243, 208)  # #A7F3D0 Emerald 200
+GREEN_PRIMARY = (5, 150, 105)   # #059669
+GREEN_BG = (209, 250, 229)      # #D1FAE5
+GREEN_BORDER = (167, 243, 208)  # #A7F3D0
 
 # Fonts
 FONT_REGULAR = "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"
@@ -77,7 +77,7 @@ def create_base_slide(badge_text="TINYML & EMBEDDED AI", slide_num=1, total_slid
     num_str = f"{slide_num:02d} / {total_slides:02d}"
     draw.text((W - 130, 62), num_str, font=num_font, fill=TEXT_MUTED)
     
-    # Progress Bar
+    # Bottom Progress Bar
     bar_w = (W - 120)
     draw.line([60, H - 90, W - 60, H - 90], fill=CARD_BORDER, width=2)
     step_w = bar_w / total_slides
@@ -94,19 +94,19 @@ def create_base_slide(badge_text="TINYML & EMBEDDED AI", slide_num=1, total_slid
     return img, draw
 
 # ==========================================
-# LIGHT MODE MATPLOTLIB CHART
+# LIGHT MATPLOTLIB CHART
 # ==========================================
 def generate_light_benchmark_chart():
     chart_path = os.path.join(ASSETS_DIR, "benchmark_chart_light.png")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.2, 4.0), facecolor='#FFFFFF')
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.2, 4.4), facecolor='#FFFFFF')
     
     formats = ['INT8 (Selected)', 'INT4 (Nibble)']
     latencies = [6557, 8264]
     sizes = [1.79, 0.88]
     
-    bars1 = ax1.bar(formats, latencies, color=['#0284C7', '#D97706'], width=0.52, edgecolor='#E2E8F0', linewidth=1)
+    bars1 = ax1.bar(formats, latencies, color=['#0284C7', '#D97706'], width=0.50, edgecolor='#E2E8F0', linewidth=1)
     ax1.set_facecolor('#F8FAFC')
-    ax1.set_title('MatMul Latency (Lower is Faster)', color='#0F172A', fontsize=12, pad=12, fontweight='bold')
+    ax1.set_title('MatMul Latency (Lower is Faster)', color='#0F172A', fontsize=13, pad=12, fontweight='bold')
     ax1.set_ylabel('Execution Time (microseconds)', color='#475569', fontsize=10)
     ax1.tick_params(colors='#475569', labelsize=10)
     ax1.grid(axis='y', linestyle='--', alpha=0.5, color='#CBD5E1')
@@ -116,11 +116,11 @@ def generate_light_benchmark_chart():
         yval = bar.get_height()
         speed_str = "1.00x (Baseline)" if lat == 6557 else "+26% Slower"
         color = '#0369A1' if lat == 6557 else '#B45309'
-        ax1.text(bar.get_x() + bar.get_width()/2.0, yval + 300, f"{lat:,} us\n({speed_str})", ha='center', va='bottom', color=color, fontsize=9.5, fontweight='bold')
+        ax1.text(bar.get_x() + bar.get_width()/2.0, yval + 300, f"{lat:,} us\n({speed_str})", ha='center', va='bottom', color=color, fontsize=10.5, fontweight='bold')
         
-    bars2 = ax2.bar(formats, sizes, color=['#059669', '#F59E0B'], width=0.52, edgecolor='#E2E8F0', linewidth=1)
+    bars2 = ax2.bar(formats, sizes, color=['#059669', '#F59E0B'], width=0.50, edgecolor='#E2E8F0', linewidth=1)
     ax2.set_facecolor('#F8FAFC')
-    ax2.set_title('Octal PSRAM Footprint (MB)', color='#0F172A', fontsize=12, pad=12, fontweight='bold')
+    ax2.set_title('Octal PSRAM Footprint (MB)', color='#0F172A', fontsize=13, pad=12, fontweight='bold')
     ax2.set_ylabel('Model Size (MB)', color='#475569', fontsize=10)
     ax2.tick_params(colors='#475569', labelsize=10)
     ax2.grid(axis='y', linestyle='--', alpha=0.5, color='#CBD5E1')
@@ -128,7 +128,7 @@ def generate_light_benchmark_chart():
     
     for bar, sz in zip(bars2, sizes):
         yval = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width()/2.0, yval + 0.08, f"{sz:.2f} MB", ha='center', va='bottom', color='#0F172A', fontsize=10, fontweight='bold')
+        ax2.text(bar.get_x() + bar.get_width()/2.0, yval + 0.08, f"{sz:.2f} MB", ha='center', va='bottom', color='#0F172A', fontsize=11, fontweight='bold')
         
     for spine in ax1.spines.values():
         spine.set_color('#CBD5E1')
@@ -146,204 +146,189 @@ def generate_light_benchmark_chart():
 def render_slide_1():
     img, draw = create_base_slide("TINYML & ON-DEVICE AI", 1)
     
-    t_font = get_font(52, bold=True)
+    t_font = get_font(54, bold=True)
     draw.text((60, 130), "Running a 1.84M", font=t_font, fill=TEXT_PRIMARY)
-    draw.text((60, 195), "Generative Micro-LM", font=t_font, fill=BLUE_PRIMARY)
-    draw.text((60, 260), "on the ESP32-S3", font=t_font, fill=TEXT_PRIMARY)
+    draw.text((60, 200), "Generative Micro-LM", font=t_font, fill=BLUE_PRIMARY)
+    draw.text((60, 270), "on the ESP32-S3", font=t_font, fill=TEXT_PRIMARY)
     
-    sub_font = get_font(21, bold=False)
-    draw.text((60, 345), "A 100% offline, bare-metal C++ Transformer running on", font=sub_font, fill=TEXT_SECONDARY)
-    draw.text((60, 375), "a $5 microcontroller with 8MB Octal PSRAM at ~12-13 tok/s.", font=sub_font, fill=TEXT_SECONDARY)
+    # 1-Line Key Subtitle
+    sub_font = get_font(23, bold=False)
+    draw.text((60, 360), "100% Offline  •  Bare-Metal C++  •  ~12-13 tokens/sec", font=sub_font, fill=TEXT_SECONDARY)
     
     dev_path = os.path.join(ASSETS_DIR, "esp32s3_devkit.jpg")
     if os.path.exists(dev_path):
         hw_img = Image.open(dev_path).convert("RGB")
         hw_img = hw_img.resize((960, 560), Image.Resampling.LANCZOS)
-        draw_shadowed_card(draw, [60, 430, 1020, 1180], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=2)
-        img.paste(hw_img, (60, 445))
+        draw_shadowed_card(draw, [60, 420, 1020, 1180], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=2)
+        img.paste(hw_img, (60, 435))
         
         draw.rounded_rectangle([90, 1075, 990, 1150], radius=10, fill=(15, 23, 42), outline=AMBER_PRIMARY, width=2)
-        spec_font = get_font(19, bold=True, mono=True)
+        spec_font = get_font(20, bold=True, mono=True)
         draw.text((115, 1098), "ESP32-S3 DevKit | Xtensa 240MHz | 8MB PSRAM | INT8 (1.79 MB)", font=spec_font, fill=(255, 215, 0))
         
     img.save(os.path.join(OUTPUT_DIR, "slide_01.png"))
     print("Slide 1 rendered")
 
 # ==========================================
-# SLIDE 2: THE MOTIVATION & PERSONA
+# SLIDE 2: THE IDEA & PERSONA (MINIMALIST)
 # ==========================================
 def render_slide_2():
     img, draw = create_base_slide("THE MOTIVATION & PERSONA", 2)
     
-    t_font = get_font(46, bold=True)
+    t_font = get_font(48, bold=True)
     draw.text((60, 130), "Brain for a Mini Desktop Robot", font=t_font, fill=TEXT_PRIMARY)
     
-    # Card 1: The Curiosity
-    draw_shadowed_card(draw, [60, 215, 1020, 495], radius=16, fill=CARD_BG, outline=CARD_BORDER, width=1)
-    draw_badge(draw, 90, 245, "THE CURIOSITY", get_font(15, bold=True), AMBER_PRIMARY, AMBER_BG, AMBER_BORDER)
-    draw.text((90, 305), "Can an ESP32 run a language model locally?", font=get_font(25, bold=True), fill=TEXT_PRIMARY)
-    body1 = (
-        "I wanted to see if a language model could run directly on an ESP32\n"
-        "to power a mini desktop companion robot.\n"
-        "Zero cloud API dependencies, zero subscription costs, 100% offline."
-    )
-    draw.text((90, 355), body1, font=get_font(20), fill=TEXT_SECONDARY)
-    
-    # Card 2: The Persona Kibo
-    draw_shadowed_card(draw, [60, 525, 1020, 815], radius=16, fill=CARD_BG, outline=CARD_BORDER, width=1)
-    draw_badge(draw, 90, 555, "THE PERSONA", get_font(15, bold=True), BLUE_PRIMARY, BLUE_BG, BLUE_BORDER)
-    
-    draw.text((90, 615), "Meet Kibo (", font=get_font(25, bold=True), fill=TEXT_PRIMARY)
-    kibo_w = get_font(25, bold=True).getbbox("Meet Kibo (")[2]
-    draw.text((90 + kibo_w, 613), "希望", font=get_font(24, cjk=True), fill=BLUE_PRIMARY)
-    kanji_w = get_font(24, cjk=True).getbbox("希望")[2]
-    draw.text((90 + kibo_w + kanji_w + 5, 615), " - Hope)", font=get_font(25, bold=True), fill=TEXT_PRIMARY)
-    
-    body2 = (
-        "Named after the Japanese word for 'Hope'.\n"
-        "Designed for interactive dialogue with emotion tags ([HAPPY],\n"
-        "[NEUTRAL], [ANGRY]) to drive LCD eye animations & motor gestures."
-    )
-    draw.text((90, 665), body2, font=get_font(20), fill=TEXT_SECONDARY)
-    
-    # Card 3: The Framework
-    draw_shadowed_card(draw, [60, 845, 1020, 1155], radius=16, fill=CARD_BG, outline=CARD_BORDER, width=1)
-    draw_badge(draw, 90, 875, "THE FRAMEWORK", get_font(15, bold=True), GREEN_PRIMARY, GREEN_BG, GREEN_BORDER)
-    draw.text((90, 935), "ESP32 Micro-LM Engine", font=get_font(25, bold=True), fill=TEXT_PRIMARY)
-    body3 = (
-        "A lightweight, modular, and fully customizable C++ inference engine\n"
-        "that proves on-chip generative intelligence is practical on $5 silicon.\n"
-        "Easily customizable for any robotics or IoT domain."
-    )
-    draw.text((90, 985), body3, font=get_font(20), fill=TEXT_SECONDARY)
-    
-    img.save(os.path.join(OUTPUT_DIR, "slide_02.png"))
-    print("Slide 2 rendered")
-
-# ==========================================
-# SLIDE 3: ON-CHIP ARCHITECTURE
-# ==========================================
-def render_slide_3():
-    img, draw = create_base_slide("ON-CHIP ARCHITECTURE", 3)
-    
-    t_font = get_font(46, bold=True)
-    draw.text((60, 130), "ESP32-S3 Compute & Memory Layout", font=t_font, fill=TEXT_PRIMARY)
-    
     cards = [
-        ("COMPUTE CORE", "Dual-Core Xtensa LX7 @ 240MHz", "• Pure bare-metal C++ execution (Zero framework overhead)\n• Direct SIMD-aligned vector dot products\n• Deterministic execution timing without garbage collection", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
-        ("MEMORY ALLOCATION", "8MB Octal PSRAM (80MHz OPI)", "• 1.79 MB INT8 Model Weights mapped directly in RAM\n• Dynamic 128-token Key-Value (KV) Cache\n• Zero-wait activation working buffers for multi-layer attention", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
-        ("MODEL PAYLOAD", "1.84M Parameters (INT8)", "• 4 Transformer Layers | 192 Hidden Dimensions | 4 Heads\n• 91 Vocabulary Tokens (Subwords + Control Tags)\n• 100% Offline with zero cloud dependencies", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+        ("THE CURIOSITY", "Can an ESP32 think locally?", "Building an on-device language model for a desktop robot companion without cloud APIs, monthly costs, or Wi-Fi dependency.", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
+        ("THE PERSONA", "Kibo (希望 - Hope)", "Friendly conversational character with emotion tags ([HAPPY], [NEUTRAL]) to drive physical robot gestures and expressions.", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
+        ("THE FRAMEWORK", "ESP32 Micro-LM Engine", "A lightweight, modular, and fully customizable bare-metal C++ inference engine designed for $5 microcontrollers.", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
     ]
     
     y = 215
     for tag, title, body, col, bg_col, b_col in cards:
+        draw_shadowed_card(draw, [60, y, 1020, y + 280], radius=16, fill=CARD_BG, outline=CARD_BORDER, width=1)
+        draw_badge(draw, 90, y + 25, tag, get_font(15, bold=True), col, bg_col, b_col)
+        
+        # Render title with CJK if Kanji present
+        if "希望" in title:
+            draw.text((90, y + 75), "Kibo (", font=get_font(28, bold=True), fill=TEXT_PRIMARY)
+            kw = get_font(28, bold=True).getbbox("Kibo (")[2]
+            draw.text((90 + kw, y + 72), "希望", font=get_font(26, cjk=True), fill=BLUE_PRIMARY)
+            kjw = get_font(26, cjk=True).getbbox("希望")[2]
+            draw.text((90 + kw + kjw + 5, y + 75), " - Hope)", font=get_font(28, bold=True), fill=TEXT_PRIMARY)
+        else:
+            draw.text((90, y + 75), title, font=get_font(28, bold=True), fill=TEXT_PRIMARY)
+            
+        draw.text((90, y + 130), body, font=get_font(22), fill=TEXT_SECONDARY)
+        y += 310
+        
+    img.save(os.path.join(OUTPUT_DIR, "slide_02.png"))
+    print("Slide 2 rendered")
+
+# ==========================================
+# SLIDE 3: ON-CHIP ARCHITECTURE (BIG STATS)
+# ==========================================
+def render_slide_3():
+    img, draw = create_base_slide("ON-CHIP ARCHITECTURE", 3)
+    
+    t_font = get_font(48, bold=True)
+    draw.text((60, 130), "ESP32-S3 Hardware & Memory Map", font=t_font, fill=TEXT_PRIMARY)
+    
+    cards = [
+        ("COMPUTE ENGINE", "240 MHz", "Dual-Core Xtensa LX7", "• Pure bare-metal C++ forward pass (Zero runtime bloat)\n• SIMD-aligned vector dot-products\n• Deterministic execution timing without garbage collection", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
+        ("MEMORY ALLOCATION", "8 MB", "Octal PSRAM (80MHz)", "• 1.79 MB INT8 Model Weights directly mapped in PSRAM\n• Dynamic 128-token Key-Value (KV) Cache\n• Zero-wait working buffers for multi-head attention", AMBER_PRIMARY, AMBER_BG, AMBER_BORDER),
+        ("MODEL ARCHITECTURE", "1.84M", "Causal Transformer Parameters", "• 4 Transformer Layers | 192 Hidden Dimensions | 4 Heads\n• 91 Vocabulary Tokens (Subwords + Control Tags)\n• 100% Offline execution with zero cloud telemetry", GREEN_PRIMARY, GREEN_BG, GREEN_BORDER),
+    ]
+    
+    y = 215
+    for tag, big_stat, subtitle, desc, col, bg_col, b_col in cards:
         draw_shadowed_card(draw, [60, y, 1020, y + 295], radius=16, fill=CARD_BG, outline=CARD_BORDER, width=1)
         draw_badge(draw, 90, y + 22, tag, get_font(15, bold=True), col, bg_col, b_col)
-        draw.text((90, y + 70), title, font=get_font(24, bold=True), fill=TEXT_PRIMARY)
-        draw.line([90, y + 110, 990, y + 110], fill=CARD_BORDER, width=1)
-        draw.text((90, y + 130), body, font=get_font(19), fill=TEXT_SECONDARY)
+        
+        # Big Stat
+        draw.text((90, y + 70), big_stat, font=get_font(34, bold=True, mono=True), fill=col)
+        stat_w = get_font(34, bold=True, mono=True).getbbox(big_stat)[2]
+        draw.text((105 + stat_w, y + 78), f"—  {subtitle}", font=get_font(22, bold=True), fill=TEXT_PRIMARY)
+        
+        draw.line([90, y + 120, 990, y + 120], fill=CARD_BORDER, width=1)
+        draw.text((90, y + 138), desc, font=get_font(20), fill=TEXT_SECONDARY)
         y += 320
         
     img.save(os.path.join(OUTPUT_DIR, "slide_03.png"))
     print("Slide 3 rendered")
 
 # ==========================================
-# SLIDE 4: THE 5-STEP PIPELINE
+# SLIDE 4: THE 5-STEP PIPELINE (PUNCHY)
 # ==========================================
 def render_slide_4():
     img, draw = create_base_slide("ENGINEERING WORKFLOW", 4)
     
-    t_font = get_font(46, bold=True)
+    t_font = get_font(48, bold=True)
     draw.text((60, 130), "From PyTorch to Bare-Metal C++", font=t_font, fill=TEXT_PRIMARY)
     
     steps = [
-        ("01", "Curate Dataset & Emotion Tags", "Structured conversational dialogue with [HAPPY], [NEUTRAL] expression tokens."),
-        ("02", "Train Model in PyTorch", "Trained a compact 4-Layer Causal Transformer (1.84M parameters, 192 dim)."),
-        ("03", "Symmetric INT8 Quantization", "Compressed weights from 7.02 MB -> 1.79 MB (100% FP32 logit fidelity)."),
-        ("04", "Bare-Metal C++ Forward Pass", "Implemented pure C++ Transformer without TFLite Micro or ONNX runtimes."),
-        ("05", "Hybrid Hardware ALU Tool Dispatch", "Math queries ('100 x 7') routed directly to hardware ALU (<0.1 ms execution)."),
+        ("01", "Dataset & Emotions", "Curated conversational dialogue with [HAPPY] & [NEUTRAL] tags."),
+        ("02", "PyTorch Training", "Trained 4-Layer Causal Transformer (1.84M params, 192 dim)."),
+        ("03", "INT8 Quantization", "Compressed model payload from 7.02 MB -> 1.79 MB (100% FP32 fidelity)."),
+        ("04", "Bare-Metal C++ Engine", "Custom forward pass and KV-cache with zero framework runtime overhead."),
+        ("05", "Hardware ALU Intercept", "Math questions ('100 x 7') evaluated on hardware ALU in <0.1 ms."),
     ]
     
     y = 215
     for num, title, desc in steps:
         draw_shadowed_card(draw, [60, y, 1020, y + 170], radius=14, fill=CARD_BG, outline=CARD_BORDER, width=1)
-        # Left accent color strip
         draw.rounded_rectangle([60, y, 70, y + 170], radius=4, fill=BLUE_PRIMARY)
         
-        # Number badge
         draw.rounded_rectangle([95, y + 25, 165, y + 95], radius=10, fill=BLUE_BG, outline=BLUE_BORDER, width=1)
-        draw.text((108, y + 36), num, font=get_font(25, bold=True, mono=True), fill=BLUE_PRIMARY)
+        draw.text((108, y + 36), num, font=get_font(26, bold=True, mono=True), fill=BLUE_PRIMARY)
         
-        draw.text((190, y + 25), title, font=get_font(23, bold=True), fill=TEXT_PRIMARY)
-        draw.text((190, y + 70), desc, font=get_font(18), fill=TEXT_SECONDARY)
+        draw.text((190, y + 25), title, font=get_font(25, bold=True), fill=TEXT_PRIMARY)
+        draw.text((190, y + 72), desc, font=get_font(20), fill=TEXT_SECONDARY)
         y += 190
         
     img.save(os.path.join(OUTPUT_DIR, "slide_04.png"))
     print("Slide 4 rendered")
 
 # ==========================================
-# SLIDE 5: INT8 vs INT4 BENCHMARK (LIGHT MATPLOTLIB)
+# SLIDE 5: INT8 vs INT4 BENCHMARK (HIGH IMPACT)
 # ==========================================
 def render_slide_5():
     img, draw = create_base_slide("EMPIRICAL HARDWARE BENCHMARK", 5)
     
-    t_font = get_font(46, bold=True)
+    t_font = get_font(48, bold=True)
     draw.text((60, 130), "The INT8 vs INT4 Paradox on MCU", font=t_font, fill=TEXT_PRIMARY)
     
-    sub_font = get_font(20, bold=False)
-    draw.text((60, 195), "Live on-chip MatMul benchmark on ESP32-S3 @ 240MHz (147,456 weights):", font=sub_font, fill=TEXT_SECONDARY)
+    sub_font = get_font(21, bold=False)
+    draw.text((60, 195), "On-chip MatMul profiling on ESP32-S3 @ 240MHz (147,456 weights):", font=sub_font, fill=TEXT_SECONDARY)
     
     chart_path = generate_light_benchmark_chart()
     if os.path.exists(chart_path):
         chart_img = Image.open(chart_path).convert("RGB")
-        chart_img = chart_img.resize((960, 420), Image.Resampling.LANCZOS)
-        draw_shadowed_card(draw, [60, 235, 1020, 675], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=1)
+        chart_img = chart_img.resize((960, 440), Image.Resampling.LANCZOS)
+        draw_shadowed_card(draw, [60, 235, 1020, 695], radius=16, fill=CARD_BG, outline=CARD_BORDER_DARK, width=1)
         img.paste(chart_img, (60, 245))
         
-    # Technical Insight Box
-    draw_shadowed_card(draw, [60, 700, 1020, 1165], radius=16, fill=CARD_BG, outline=BLUE_BORDER, width=2)
-    draw_badge(draw, 90, 725, "THE HARDWARE EXPLANATION", get_font(15, bold=True), BLUE_PRIMARY, BLUE_BG, BLUE_BORDER)
+    # High-Impact Key Finding Box
+    draw_shadowed_card(draw, [60, 725, 1020, 1165], radius=16, fill=CARD_BG, outline=BLUE_BORDER, width=2)
+    draw_badge(draw, 90, 755, "KEY HARDWARE FINDING", get_font(16, bold=True), BLUE_PRIMARY, BLUE_BG, BLUE_BORDER)
     
-    draw.text((90, 780), "Why INT4 is +26% slower on Microcontrollers:", font=get_font(23, bold=True), fill=TEXT_PRIMARY)
+    draw.text((90, 815), "INT8 is 26% faster than INT4 on Xtensa LX7", font=get_font(27, bold=True), fill=TEXT_PRIMARY)
     
     insight_text = (
-        "• On microcontrollers without dedicated tensor units (NPU), INT4\n"
-        "  requires manual CPU unpacking for every single nibble:\n"
-        "    - Bit-masking (& 0x0F) and bit-shifting (>> 4)\n"
-        "    - 4-bit two's complement sign-extension\n\n"
-        "• The CPU cycles wasted on bit-manipulation completely cancel out\n"
-        "  the memory bandwidth advantage.\n\n"
-        "• Conclusion: Byte-aligned INT8 is 26% faster with 100% FP32 logit fidelity!"
+        "• Without a dedicated NPU, INT4 forces the CPU to unpack each nibble\n"
+        "  using bit-masking (& 0x0F) and bit-shifting (>> 4).\n\n"
+        "• This ALU unpacking overhead wastes more CPU cycles than the memory\n"
+        "  bandwidth savings it provides.\n\n"
+        "• Byte-aligned INT8 remains the optimal sweet spot for microcontrollers!"
     )
-    draw.text((90, 830), insight_text, font=get_font(20), fill=TEXT_SECONDARY)
+    draw.text((90, 875), insight_text, font=get_font(21), fill=TEXT_SECONDARY)
     
     img.save(os.path.join(OUTPUT_DIR, "slide_05.png"))
     print("Slide 5 rendered")
 
 # ==========================================
-# SLIDE 6: CROPPED TERMINAL IN LIGHT WINDOW CONTAINER
+# SLIDE 6: CROPPED TERMINAL
 # ==========================================
 def render_slide_6():
     img, draw = create_base_slide("LIVE TERMINAL INFERENCE", 6)
     
-    t_font = get_font(44, bold=True)
+    t_font = get_font(46, bold=True)
     draw.text((60, 130), "Real-Time UART Generation (~12-13 tok/s)", font=t_font, fill=TEXT_PRIMARY)
     
-    # Terminal Window Container
-    draw_shadowed_card(draw, [55, 200, 1025, 860], radius=16, fill=(15, 23, 42), outline=CARD_BORDER_DARK, width=2)
+    draw_shadowed_card(draw, [55, 195, 1025, 865], radius=16, fill=(15, 23, 42), outline=CARD_BORDER_DARK, width=2)
     
     # Window Header
-    draw.rounded_rectangle([55, 200, 1025, 245], radius=16, fill=(30, 41, 59))
-    draw.ellipse([75, 216, 91, 232], fill=(239, 68, 68))   # Red
-    draw.ellipse([99, 216, 115, 232], fill=(245, 158, 11)) # Yellow
-    draw.ellipse([123, 216, 139, 232], fill=(16, 185, 129))# Green
-    draw.text((440, 215), "serial_chat.py - 115200 baud", font=get_font(16, bold=True, mono=True), fill=(148, 163, 184))
+    draw.rounded_rectangle([55, 195, 1025, 240], radius=16, fill=(30, 41, 59))
+    draw.ellipse([75, 211, 91, 227], fill=(239, 68, 68))
+    draw.ellipse([99, 211, 115, 227], fill=(245, 158, 11))
+    draw.ellipse([123, 211, 139, 227], fill=(16, 185, 129))
+    draw.text((440, 210), "serial_chat.py - 115200 baud", font=get_font(16, bold=True, mono=True), fill=(148, 163, 184))
     
     crop_path = "/home/aiot/.gemini/antigravity-ide/brain/b745120a-0087-4bb2-b22a-7e8180b591c4/scratch/crop_terminal_perfect.jpg"
     if os.path.exists(crop_path):
         term_img = Image.open(crop_path).convert("RGB")
-        term_img = term_img.resize((960, 600), Image.Resampling.LANCZOS)
-        img.paste(term_img, (60, 250))
+        term_img = term_img.resize((960, 610), Image.Resampling.LANCZOS)
+        img.paste(term_img, (60, 245))
         
     metrics = [
         ("12.2 tok/s", "Real-Time Speed", "Physical chip verified", BLUE_PRIMARY, BLUE_BG, BLUE_BORDER),
@@ -353,22 +338,22 @@ def render_slide_6():
     
     x = 60
     for val, label, sub, col, bg_col, b_col in metrics:
-        draw_shadowed_card(draw, [x, 885, x + 300, 1165], radius=14, fill=CARD_BG, outline=b_col, width=1)
-        draw.text((x + 25, 915), val, font=get_font(32, bold=True, mono=True), fill=col)
-        draw.text((x + 25, 975), label, font=get_font(21, bold=True), fill=TEXT_PRIMARY)
-        draw.text((x + 25, 1020), sub, font=get_font(17), fill=TEXT_MUTED)
+        draw_shadowed_card(draw, [x, 890, x + 300, 1165], radius=14, fill=CARD_BG, outline=b_col, width=1)
+        draw.text((x + 25, 920), val, font=get_font(34, bold=True, mono=True), fill=col)
+        draw.text((x + 25, 980), label, font=get_font(22, bold=True), fill=TEXT_PRIMARY)
+        draw.text((x + 25, 1025), sub, font=get_font(18), fill=TEXT_MUTED)
         x += 330
         
     img.save(os.path.join(OUTPUT_DIR, "slide_06.png"))
     print("Slide 6 rendered")
 
 # ==========================================
-# SLIDE 7: MULTI-BOARD & OPEN SOURCE
+# SLIDE 7: MULTI-BOARD & OPEN SOURCE (CLEAN CTA)
 # ==========================================
 def render_slide_7():
     img, draw = create_base_slide("MULTI-BOARD & OPEN SOURCE", 7)
     
-    t_font = get_font(46, bold=True)
+    t_font = get_font(48, bold=True)
     draw.text((60, 130), "Validated on 3 Form Factors", font=t_font, fill=TEXT_PRIMARY)
     
     boards = [
@@ -387,16 +372,16 @@ def render_slide_7():
             b_img = b_img.resize((210, 155), Image.Resampling.LANCZOS)
             img.paste(b_img, (80, y + 20))
             
-        draw.text((320, y + 35), name, font=get_font(26, bold=True), fill=TEXT_PRIMARY)
-        draw.text((320, y + 80), specs, font=get_font(20), fill=BLUE_PRIMARY)
+        draw.text((320, y + 35), name, font=get_font(27, bold=True), fill=TEXT_PRIMARY)
+        draw.text((320, y + 80), specs, font=get_font(21), fill=BLUE_PRIMARY)
         draw.text((320, y + 125), "✓ 100% Tested & Verified on Hardware", font=get_font(18, bold=True), fill=GREEN_PRIMARY)
         y += 225
         
-    # CTA Card (Clean without emoji box)
+    # Clean CTA Card
     draw_shadowed_card(draw, [60, 915, 1020, 1165], radius=16, fill=BLUE_BG, outline=BLUE_BORDER, width=2)
-    draw.text((95, 940), "100% Open Source on GitHub (MIT License)", font=get_font(24, bold=True), fill=BLUE_PRIMARY)
-    draw.text((95, 985), "github.com/fitranurmayadi/esp32-microlm", font=get_font(24, bold=True, mono=True), fill=TEXT_PRIMARY)
-    draw.text((95, 1045), "Clone, train your custom dataset, and flash to your ESP32!", font=get_font(19), fill=TEXT_SECONDARY)
+    draw.text((95, 940), "100% Open Source on GitHub (MIT License)", font=get_font(25, bold=True), fill=BLUE_PRIMARY)
+    draw.text((95, 985), "github.com/fitranurmayadi/esp32-microlm", font=get_font(25, bold=True, mono=True), fill=TEXT_PRIMARY)
+    draw.text((95, 1045), "Clone, train your custom dataset, and flash to your ESP32!", font=get_font(20), fill=TEXT_SECONDARY)
     
     img.save(os.path.join(OUTPUT_DIR, "slide_07.png"))
     print("Slide 7 rendered")
@@ -415,4 +400,4 @@ slide_files = [os.path.join(OUTPUT_DIR, f"slide_{i:02d}.png") for i in range(1, 
 images = [Image.open(f).convert("RGB") for f in slide_files]
 pdf_path = os.path.join(OUTPUT_DIR, "esp32_microlm_carousel_light.pdf")
 images[0].save(pdf_path, save_all=True, append_images=images[1:], resolution=150.0)
-print(f"All 7 Light Mode slides and PDF generated at {pdf_path}")
+print(f"All 7 Minimalist Light Mode slides and PDF generated at {pdf_path}")
