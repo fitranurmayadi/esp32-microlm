@@ -16,7 +16,7 @@ The entire system executes locally on-device without cloud connections, external
 
 ## Live Hardware Demonstration
 
-![Kibo ESP32-S3 Live Demo](testing_video/kibo_demo.gif)
+![Kibo ESP32-S3 Live Demo](testing_video/kibo_terminal_cropped.gif)
 
 > **Full Demonstration Video**: [`testing_video/ujicoba_kibo.mp4`](testing_video/ujicoba_kibo.mp4) (1080p @ 60 FPS live interactive UART terminal session running on physical ESP32-S3 hardware).
 

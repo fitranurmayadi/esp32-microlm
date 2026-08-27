@@ -16,7 +16,7 @@ Seluruh proses inferensi dieksekusi 100% on-device tanpa jaringan internet atau 
 
 ## Demonstrasi Nyata di Hardware ESP32-S3
 
-![Kibo ESP32-S3 Live Demo](../testing_video/kibo_demo.gif)
+![Kibo ESP32-S3 Live Demo](../testing_video/kibo_terminal_cropped.gif)
 
 > **Video Demonstrasi Lengkap**: [`../testing_video/ujicoba_kibo.mp4`](../testing_video/ujicoba_kibo.mp4) (Sesi live UART terminal 1080p @ 60 FPS langsung di ESP32-S3 DevKit N16R8).
 
