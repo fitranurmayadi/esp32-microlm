@@ -154,6 +154,36 @@ Launch the serial terminal:
 
 ---
 
+## Customizing Your Own Persona & Dataset
+
+The pipeline is completely self-contained, allowing anyone to easily train a custom character, name, language, or domain persona in 3 simple steps:
+
+### 1. Edit the Dataset (`kibo_microlm/kibo_dataset.txt`)
+Add your custom conversational pairs using structured dialogue lines and emotion tags:
+```text
+User: hello
+Kibo: [HAPPY] Hello there! Great to see you! <EOS>
+
+User: who created you?
+Kibo: [NEUTRAL] I was built using Micro-LM on the ESP32-S3! <EOS>
+```
+*Emotion tags (`[HAPPY]`, `[NEUTRAL]`, `[ANGRY]`, `[THINKING]`) can also be used as hardware triggers to render animated eye expressions on circular SPI LCDs.*
+
+### 2. Retrain the Model
+Train the 1.84M Causal Transformer on your dataset (takes ~2 minutes on standard CPU/GPU):
+```bash
+python3 kibo_microlm/train.py
+```
+
+### 3. Export & Flash to ESP32
+Quantize the newly trained weights to INT8 and flash to your board:
+```bash
+python3 kibo_microlm/export_int8_bin.py
+./flash_devkit_s3.sh
+```
+
+---
+
 ## Example Interaction
 
 ```text

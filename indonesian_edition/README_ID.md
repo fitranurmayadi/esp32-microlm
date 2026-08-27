@@ -83,6 +83,36 @@ indonesian_edition/
 
 ---
 
+## Kustomisasi Persona & Dataset Sendiri
+
+Seluruh alur pelatihan dan ekspor bersifat mandiri (*self-contained*), sehingga siapa pun dapat melatih persona, nama robot, bahasa, atau karakter percakapan sendiri dalam 3 langkah mudah:
+
+### 1. Edit Dataset Percakapan (`kibo_microlm/kibo_dataset.txt`)
+Tambahkan dialog percakapan Anda menggunakan format terstruktur dan tag emosi:
+```text
+User: halo
+Kibo: [HAPPY] Halo sahabatku! Senang bertemu denganmu! <EOS>
+
+User: siapa pembuatmu?
+Kibo: [NEUTRAL] Aku dibuat menggunakan Micro-LM langsung di ESP32-S3! <EOS>
+```
+*Tag emosi (`[HAPPY]`, `[NEUTRAL]`, `[ANGRY]`, `[THINKING]`) juga dapat dimanfaatkan sebagai pemicu perangkat keras untuk menampilkan animasi mata di layar LCD SPI.*
+
+### 2. Latih Ulang Model
+Jalankan pelatihan model 1.84M Causal Transformer pada dataset baru (hanya butuh ~2 menit di CPU/GPU biasa):
+```bash
+python3 kibo_microlm/train.py
+```
+
+### 3. Ekspor & Flash ke ESP32
+Kuantisasi bobot baru ke INT8 dan unggah langsung ke board Anda:
+```bash
+python3 kibo_microlm/export_int8_bin.py
+./flash_devkit_s3.sh
+```
+
+---
+
 ## Contoh Interaksi
 
 ```text
