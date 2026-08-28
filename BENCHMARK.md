@@ -15,8 +15,8 @@ This document presents empirical measurements, memory hierarchy profiling, and a
 | **Memory Strategy** | Octal PSRAM | Strict SRAM + PSRAM | Strict SRAM + PSRAM | **SRAM (Hot) + Octal PSRAM (Weights)** |
 | **Compute Kernel** | Scalar float MAC | 8-Way Unrolled FPU | Dual-Core 8-Way FPU | **Dual-Core 8-Way FP32 FPU** |
 | **Multi-Core Execution** | Single-Core | Dual-Core Worker Task | Dual-Core Task Pinning | **Dual-Core Symmetrical (Core 0+1)** |
-| **Measured Decode Speed** | **~12.3 tok/s** | **⚡ 14.2 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** |
-| **Compute Throughput** | $22.6\text{ M ops/sec}$ | $27.0\text{ M ops/sec}$ | $28.7\text{ M ops/sec}$ | $\mathbf{28.7\text{ M ops/sec}}$ |
+| **Measured Decode Speed** | **~12.3 tok/s** | **⚡ 13.5 – 14.5 tok/s** | **⚡ 14.5 – 15.4 tok/s** | **⚡ 14.5 – 15.6 tok/s** |
+| **Compute Throughput** | $22.6\text{ M ops/sec}$ | $25.8\text{ M ops/sec}$ | $28.3\text{ M ops/sec}$ | $\mathbf{28.7\text{ M ops/sec}}$ |
 | **Tool Calling & Agent** | Emotion Tokens | Emotion + Exact Math | Emotion + Exact Math | **Agent (Emotions + Math Engine)** |
 
 ---

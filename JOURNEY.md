@@ -104,11 +104,11 @@ To independently verify the physical plausibility of achieving **~12.3 tokens/se
 
 ## 7. Hardware Validation Summary Across Versions
 
-| Target Board | Flash / PSRAM | v1.0 Baseline | v2.0 Dual-Core | v3.0 Native IDF | **v4.0 Universal (Latest)** |
+| Target Board | Flash / PSRAM | v1.0 Baseline | v2.0 Dual-Core | v3.0 Native IDF | **v4.0 Multi-Board (Latest)** |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **ESP32-S3 DevKit N16R8** | 16MB Flash / 8MB Octal | ~12.3 tok/s | 14.2–15.6 tok/s | 14.5–15.8 tok/s | **15.5–16.6 tok/s** |
-| **Arduino Nano ESP32** | 16MB Flash / 8MB Octal | ~12.2 tok/s | 14.1–15.5 tok/s | 14.5–15.8 tok/s | **15.5–16.6 tok/s** |
-| **Seeed Studio XIAO ESP32-S3** | 8MB Flash / 8MB Octal | ~12.4 tok/s | 14.3–15.6 tok/s | 14.5–15.8 tok/s | **15.5–16.6 tok/s** |
+| **ESP32-S3 DevKit N16R8** | 16MB Flash / 8MB Octal | ~12.3 tok/s | 13.5–14.5 tok/s | 14.5–15.4 tok/s | **14.5–15.6 tok/s** |
+| **Arduino Nano ESP32** | 16MB Flash / 8MB Octal | ~12.2 tok/s | 13.5–14.4 tok/s | 14.5–15.4 tok/s | **14.5–15.6 tok/s** |
+| **Seeed Studio XIAO ESP32-S3** | 8MB Flash / 8MB Octal | ~12.4 tok/s | 13.6–14.5 tok/s | 14.5–15.4 tok/s | **14.5–15.6 tok/s** |
 
 ---
 
