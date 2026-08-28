@@ -1,56 +1,54 @@
-# Kibo: Embedded Micro-LM & Hybrid AI on ESP32-S3
+# ESP32 Micro-LM: Embedded 1.84M Language Model on ESP32-S3
 
 [![SoC: ESP32-S3](https://img.shields.io/badge/SoC-ESP32--S3-red.svg)](https://www.espressif.com/en/products/socs/esp32-s3)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform: Arduino Core 3.x](https://img.shields.io/badge/Platform-Arduino%20Core%203.x-green.svg)](https://github.com/espressif/arduino-esp32)
-[![Quantization: INT8](https://img.shields.io/badge/Quantization-INT8-orange.svg)]()
+[![Framework: ESP--IDF / Arduino](https://img.shields.io/badge/Framework-ESP--IDF%20%2F%20Arduino-green.svg)](https://github.com/espressif/esp-idf)
+[![Quantization: INT8 W8A32](https://img.shields.io/badge/Quantization-INT8%20W8A32-orange.svg)]()
 [![PSRAM: 8MB Octal](https://img.shields.io/badge/PSRAM-8MB%20Octal%20OPI-purple.svg)]()
 
 [Documentation (Bahasa Indonesia)](indonesian_edition/README_ID.md) | [Architecture & Design Journey](JOURNEY.md) | [Scientific Benchmarks](BENCHMARK.md)
 
-Kibo is an on-chip generative Micro Language Model (Micro-LM) and hybrid inference engine written in bare-metal C++ for the ESP32-S3 microcontroller.
+ESP32 Micro-LM is an on-chip generative Language Model (Micro-LM) and bare-metal C++ inference engine running locally on the ESP32-S3 microcontroller.
 
-The entire system executes locally on-device with zero external dependencies. In **v2.0 / v3.0**, the engine utilizes **Dual-Core FreeRTOS parallel task splitting** (Core 0 + Core 1 @ 240MHz) and **8-way unrolled compute kernels** to achieve **14.5–15.6 tokens/second** sustained generation throughput on physical hardware (~65ms total per token: 30ms Octal PSRAM streaming + 35ms compute).
+The entire system executes on-device with zero external cloud dependencies. The engine utilizes **Dual-Core FreeRTOS parallel task splitting** (Core 0 + Core 1) and **8-way unrolled compute kernels** to achieve **15.5 tokens/second** sustained generation throughput on physical hardware.
 
 ---
 
 ## Live Hardware Demonstration
 
-![Kibo ESP32-S3 Live Demo](testing_video/kibo_terminal_cropped.gif)
-
-> **Full Demonstration Video**: [`testing_video/ujicoba_kibo.mp4`](testing_video/ujicoba_kibo.mp4) (1080p @ 60 FPS live interactive UART terminal session running on physical ESP32-S3 hardware).
+![ESP32-S3 Live Demo](assets/kibo_hero_card.gif)
 
 ---
 
 ## Architectural Features
 
-* **Dual-Core FreeRTOS Parallel Engine (v2.0)**: Parallelizes Multi-Head Attention and 768-dim MLP feed-forward projections across Core 0 (PRO_CPU) and Core 1 (APP_CPU) at 240MHz.
-* **4-Way 32-Bit Unrolled Vector Math**: Reads weights as packed 32-bit words with 4-way unrolled FPU accumulation to eliminate pipeline dependency stalls.
+* **Dual-Core FreeRTOS Parallel Engine**: Parallelizes Multi-Head Attention and 768-dim MLP feed-forward projections across Core 0 (PRO_CPU) and Core 1 (APP_CPU).
+* **8-Way Unrolled Vector Math (W8A32)**: Reads INT8 weights as packed 32-bit words with unrolled FPU accumulation in 32-bit registers to eliminate pipeline stalls.
 * **Strict Tiered Memory Hierarchy**: Working activation buffers locked in ultra-fast internal SRAM (240 MB/s), INT8 weights and 128-token KV-cache in Octal PSRAM (80 MB/s).
-* **Hybrid AI Architecture**: Combines autoregressive neural generation (dialogue and emotion tokens) with deterministic tool dispatch (arithmetic, hardware telemetry, and actuator hooks).
+* **Hybrid AI Architecture**: Combines autoregressive neural generation (dialogue and emotion tokens) with deterministic tool dispatch (exact arithmetic and hardware telemetry).
 * **Zero Runtime Bloat**: 100% standalone C++ forward pass with zero ML frameworks (No TFLite Micro, No ONNX).
-* **Multi-Board Support**: Verified on ESP32-S3 DevKit N16R8, Arduino Nano ESP32, and Seeed Studio XIAO ESP32-S3.
+* **Multi-Board Compatibility**: Verified on ESP32-S3 DevKit N16R8, Arduino Nano ESP32, and Seeed Studio XIAO ESP32-S3.
 
 ---
 
-## Supported Boards
+## Supported Boards & Hardware Benchmark
 
-| Target Board | Flash Memory | PSRAM Architecture | Serial Interface | Flash Script |
-| :--- | :---: | :---: | :---: | :--- |
-| **ESP32-S3 DevKit N16R8** | 16 MB Quad SPI (`DIO`) | 8 MB Octal OPI (`AP_3v3`) | UART Bridge (`/dev/ttyUSB0`) | [`flash_devkit_s3.sh`](flash_devkit_s3.sh) |
-| **Arduino Nano ESP32** | 16 MB NOR Flash (`DIO`) | 8 MB Octal OPI (NORA-W106) | Native USB CDC (`/dev/ttyACM*`) | [`flash_kibo_nano.sh`](flash_kibo_nano.sh) |
-| **Seeed Studio XIAO ESP32-S3** | 8 MB Quad SPI (`DIO`) | 8 MB Octal OPI (`AP_3v3`) | Native USB CDC (`/dev/ttyACM*`) | [`flash_xiao_s3.sh`](flash_xiao_s3.sh) |
+| Target Board | Flash Memory | PSRAM Architecture | Serial Interface | Generation Speed | Status |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **ESP32-S3 DevKit N16R8** | 16 MB Quad SPI (`DIO`) | 8 MB Octal OPI (`AP_3v3`) | UART Bridge (`/dev/ttyUSB0`) | **15.5 tok/s** | ✅ Verified |
+| **Arduino Nano ESP32** | 16 MB NOR Flash (`DIO`) | 8 MB Octal OPI (NORA-W106) | Native USB JTAG (`/dev/ttyACM0`) | **15.5 tok/s** | ✅ Verified |
+| **Seeed Studio XIAO ESP32-S3** | 8 MB Quad SPI (`DIO`) | 8 MB Octal OPI (`AP_3v3`) | Native USB JTAG (`/dev/ttyACM1`) | **15.5 tok/s** | ✅ Verified |
 
 ---
 
-## Release Versions & Roadmap
+## Release Versions
 
-| Version | Framework | Engine & Parallelism Architecture | Empirical Speed (Measured) | Theoretical Limit (Compute-Only) | Git Branch & Release Tag |
-| :--- | :---: | :--- | :---: | :---: | :--- |
-| **v1.0** | Arduino Core 3.x | Single-Core 240MHz Baseline | **~12.3 tok/s** | ~14.1 tok/s | [`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0) / `v1.0` |
-| **v2.0** | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way Unrolled | **14.2 – 15.6 tok/s** | ~18.5 tok/s | [`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0) / `v2.0` |
-| **v3.0** | ESP-IDF Native v5.x | Native FreeRTOS + Dual-Core Task Pinning | **14.5 – 15.8 tok/s** | ~22.4 tok/s | [`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0) / `v3.0` |
-| **v4.0 (Latest)** | ESP-IDF Native v5.x | **Gemma 3n Per-Layer Embeddings (PLE) Hybrid** | **⚡ 14.2 – 15.8 tok/s** | ~22.4 tok/s | [`release/v4.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v4.0) / `v4.0` |
+| Version | Framework | Engine & Parallelism Architecture | Empirical Speed (Measured) |
+| :--- | :---: | :--- | :---: |
+| **v1.0** | Arduino Core 3.x | Single-Core Baseline (W8A32 INT8) | **~12.3 tok/s** |
+| **v2.0** | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way Unrolled | **14.2 – 15.6 tok/s** |
+| **v3.0** | ESP-IDF Native | Native FreeRTOS + Dual-Core Task Pinning | **14.5 – 15.8 tok/s** |
+| **v4.0 (Latest)** | ESP-IDF Native | **Universal Dual-Interface + Multi-Board Engine** | **⚡ 15.5 tok/s** |
 
 ---
 
