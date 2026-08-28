@@ -352,12 +352,22 @@ static bool kibo_math_calculator(const String& input, String& response) {
     clean.replace("!", "");
     clean.replace(",", "");
     
+    // English & Indonesian Normalization
+    clean.replace(" dikali ", " * ");
+    clean.replace(" kali ", " * ");
     clean.replace(" multiplied by ", " * ");
     clean.replace(" times ", " * ");
+    clean.replace(" dibagi ", " / ");
+    clean.replace(" bagi ", " / ");
     clean.replace(" divided by ", " / ");
     clean.replace(" over ", " / ");
+    clean.replace(" ditambah ", " + ");
+    clean.replace(" tambah ", " + ");
     clean.replace(" plus ", " + ");
     clean.replace(" added to ", " + ");
+    clean.replace(" dikurang ", " - ");
+    clean.replace(" dikurangi ", " - ");
+    clean.replace(" kurang ", " - ");
     clean.replace(" minus ", " - ");
     clean.replace(" subtracted by ", " - ");
     clean.replace(" x ", " * ");
