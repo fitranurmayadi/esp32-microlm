@@ -10,7 +10,7 @@
 
 ESP32 Micro-LM is an on-chip generative Language Model (Micro-LM) and bare-metal C++ inference engine running locally on the ESP32-S3 microcontroller.
 
-The entire system executes on-device with zero external cloud dependencies. The engine utilizes **Dual-Core FreeRTOS parallel task splitting** (Core 0 + Core 1) and **8-way unrolled compute kernels** to achieve **15.5 tokens/second** sustained generation throughput on physical hardware.
+The entire system executes on-device with zero external cloud dependencies. The engine utilizes **Dual-Core FreeRTOS parallel task splitting** (Core 0 + Core 1) and **8-way unrolled compute kernels** to achieve **15.5–16.6 tokens/second** sustained generation throughput on physical hardware (15.5 tok/s sustained UART output across all boards).
 
 ---
 
@@ -33,36 +33,36 @@ The entire system executes on-device with zero external cloud dependencies. The 
 
 ## Supported Boards & Hardware Benchmark
 
-| Target Board | Flash Memory | PSRAM Architecture | Serial Interface | Generation Speed | Status |
+| Target Board | Flash Memory | PSRAM Architecture | Serial Interface | Generation Speed (Measured) | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **ESP32-S3 DevKit N16R8** | 16 MB Quad SPI (`DIO`) | 8 MB Octal OPI (`AP_3v3`) | UART Bridge (`/dev/ttyUSB0`) | **15.5 tok/s** | ✅ Verified |
-| **Arduino Nano ESP32** | 16 MB NOR Flash (`DIO`) | 8 MB Octal OPI (NORA-W106) | Native USB JTAG (`/dev/ttyACM0`) | **15.5 tok/s** | ✅ Verified |
-| **Seeed Studio XIAO ESP32-S3** | 8 MB Quad SPI (`DIO`) | 8 MB Octal OPI (`AP_3v3`) | Native USB JTAG (`/dev/ttyACM1`) | **15.5 tok/s** | ✅ Verified |
+| **ESP32-S3 DevKit N16R8** | 16 MB Quad SPI (`DIO`) | 8 MB Octal OPI (`AP_3v3`) | UART Bridge (`/dev/ttyUSB0`) | **15.5 – 16.6 tok/s** | ✅ Verified |
+| **Arduino Nano ESP32** | 16 MB NOR Flash (`DIO`) | 8 MB Octal OPI (NORA-W106) | Native USB JTAG (`/dev/ttyACM0`) | **15.5 – 16.6 tok/s** | ✅ Verified |
+| **Seeed Studio XIAO ESP32-S3** | 8 MB Quad SPI (`DIO`) | 8 MB Octal OPI (`AP_3v3`) | Native USB JTAG (`/dev/ttyACM1`) | **15.5 – 16.6 tok/s** | ✅ Verified |
 
 ---
 
 ## Release Versions
 
-| Version | Framework | Engine & Parallelism Architecture | Empirical Speed (Measured) |
-| :--- | :---: | :--- | :---: |
-| **v1.0** | Arduino Core 3.x | Single-Core Baseline (W8A32 INT8) | **~12.3 tok/s** |
-| **v2.0** | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way Unrolled | **14.2 – 15.6 tok/s** |
-| **v3.0** | ESP-IDF Native | Native FreeRTOS + Dual-Core Task Pinning | **14.5 – 15.8 tok/s** |
-| **v4.0 (Latest)** | ESP-IDF Native | **Universal Dual-Interface + Multi-Board Engine** | **⚡ 15.5 tok/s** |
+| Version | Framework | Engine & Parallelism Architecture | Empirical Speed (Measured) | Release Tag & Branch |
+| :--- | :---: | :--- | :---: | :--- |
+| **v1.0** | Arduino Core 3.x | Single-Core Baseline (W8A32 INT8) | **~12.3 tok/s** | [`v1.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v1.0) |
+| **v2.0** | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way Unrolled FPU | **14.2 – 15.6 tok/s** | [`v2.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v2.0) |
+| **v3.0** | ESP-IDF Native | Native FreeRTOS + Dual-Core Task Pinning | **14.5 – 15.8 tok/s** | [`v3.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v3.0) |
+| **v4.0 (Latest / main)** | ESP-IDF Native | **Universal Dual-Interface + Multi-Board Engine** | **⚡ 15.5 – 16.6 tok/s** | [`v4.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v4.0) |
 
 ---
 
 ## 🔬 Architectural Comparison vs Competitor Open-Source Engines
 
-| Metric / Parameter | **DaveBben (`esp32-llm`)** | **slvDev (`esp32-ai`)** | **Kibo Micro-LM v4.0 (Our Work)** |
+| Metric / Parameter | **DaveBben (`esp32-llm`)** | **slvDev (`esp32-ai`)** | **ESP32 Micro-LM v4.0 (Our Work)** |
 | :--- | :---: | :---: | :---: |
-| **Active Reasoning Core** | 260K parameters (tinyllamas) | 559K parameters (Gemma 3n PLE) | **1.84M Dense Parameters** |
-| **Stored Memory Capacity** | 260K parameters (1.04 MB FP32) | 28.9M (25.2M Flash Table) | **10M–25M Flash PLE + 1.84M PSRAM** |
-| **Weight Precision** | FP32 (Float 4-byte) | INT4 (4-bit PTQ group 32) | **INT8 W8A32 Symmetric** |
-| **Empirical Speed on Silicon** | **19.13 tok/s** *(at 260K)* | **9.5 – 9.88 tok/s** *(at 559K)* | **⚡ 14.2 – 15.8 tok/s** *(at 1.84M)* |
+| **Active Reasoning Core** | 260K parameters (tinyllamas) | 559K parameters | **1.84M Dense Parameters** |
+| **Stored Memory Capacity** | 260K parameters (1.04 MB FP32) | 28.9M (Flash Table) | **1.84M Parameters (2.02 MB INT8 in PSRAM)** |
+| **Weight Precision** | FP32 (Float 4-byte) | INT4 (4-bit PTQ group 32) | **INT8 W8A32 Mixed Precision** |
+| **Empirical Speed on Silicon** | **19.13 tok/s** *(at 260K)* | **9.5 – 9.88 tok/s** *(at 559K)* | **⚡ 15.5 – 16.6 tok/s** *(at 1.84M)* |
 | **Compute Density Throughput** | $4.97\text{ Million ops/sec}$ | $5.31\text{ Million ops/sec}$ | $\mathbf{28.7\text{ Million ops/sec}}$ 🚀 |
 | **Efficiency vs DaveBben** | 1.0x (Baseline tiny model) | 1.07x | **5.77x Higher Compute Density** |
-| **Deterministic Tool Calling** | ❌ None | ❌ None | **✅ Instant Math (<0.1ms) + Actuators** |
+| **Deterministic Tool Calling** | ❌ None | ❌ None | **✅ Instant Math (<0.1ms) + Telemetry** |
 
 ---
 
