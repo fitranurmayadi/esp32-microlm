@@ -446,7 +446,7 @@ static bool kibo_math_calculator(const std::string& input, double& out_result, s
 }
 
 bool kibo_init_model() {
-    printf("\n[kibo-idf] initializing v2.1 native esp-idf engine...\n");
+    printf("\n[kibo-idf] initializing v3.0 native esp-idf engine...\n");
     
     // Allocate high-speed internal SRAM buffers
     act_x        = (float*)heap_caps_malloc(N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
@@ -557,7 +557,7 @@ bool kibo_init_model() {
         offset += data_bytes;
     }
     
-    printf("[kibo-idf] v2.1 native esp-idf dual-core engine ready!\n");
+    printf("[kibo-idf] v3.0 native esp-idf dual-core engine ready!\n");
     return true;
 }
 

@@ -1,6 +1,6 @@
-# Kibo Micro-LM (Native ESP-IDF v5.x Port)
+# Kibo Micro-LM (v3.0 Native ESP-IDF Edition)
 
-Native ESP-IDF C++ port of **Kibo Micro-LM** (1.84M Parameter Causal Transformer) with **Xtensa LX7 Coprocessor 0 (PIE 128-Bit SIMD Vector Unit)** and Dual-Core FreeRTOS parallelism.
+Native ESP-IDF C++ port of **Kibo Micro-LM v3.0** (1.84M Parameter Causal Transformer) with **Xtensa LX7 Coprocessor 0 (PIE 128-Bit SIMD Vector Unit)** and Dual-Core FreeRTOS parallelism.
 
 ---
 

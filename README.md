@@ -228,10 +228,10 @@ Kibo: [NEUTRAL] Goodbye! See you next time my friend! Stay awesome!
 
 | Branch / Tag | Framework | Inference Engine | Measured Speed | Description |
 | :--- | :--- | :--- | :---: | :--- |
-| **`main`** | Arduino Core 3.x | Dual-Core 8-Way FPU | **⚡ 15.6 tok/s** | Stable default release with bilingual math & telemetry |
-| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core 8-Way FPU | **⚡ 15.6 tok/s** | Milestone v2.0 rtos-parallel release |
+| **`main`** | Universal | Dual-Core 8-Way FPU + ESP-IDF Port | **⚡ 15.6 tok/s** | Stable default release with bilingual math & telemetry |
+| **[`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0)** (Tag `v3.0`) | ESP-IDF v5.x Native | PIE 128-Bit SIMD + Dual-Core | **🚀 ~20+ tok/s Target** | Milestone v3.0 native ESP-IDF port with Coprocessor CP0 |
+| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way FPU | **⚡ 15.6 tok/s** | Milestone v2.0 dual-core 240MHz parallel release |
 | **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Scalar | **~12.3 tok/s** | Milestone v1.0 baseline single-core release |
-| **[`feature/v2.1-espidf-simd`](https://github.com/fitranurmayadi/esp32-microlm/tree/feature/v2.1-espidf-simd)** | ESP-IDF v5.x Native | PIE 128-Bit SIMD + Dual-Core | **🚀 ~20+ tok/s** | Native ESP-IDF port with Coprocessor CP0 vector instructions |
 
 ---
 
