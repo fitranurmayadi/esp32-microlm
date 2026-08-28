@@ -27,9 +27,6 @@ extern "C" void app_main(void) {
         return;
     }
     
-    // Flush any bootup UART garbage/keystrokes
-    uart_flush_input(UART_NUM_0);
-    
     printf("\nType your message below and press Enter (Commands: 'benchmark', 'status'):\n\nUser: ");
     fflush(stdout);
     
@@ -37,9 +34,7 @@ extern "C" void app_main(void) {
     while (true) {
         if (fgets(line_buf, sizeof(line_buf), stdin) != NULL) {
             std::string input(line_buf);
-            if (!input.empty() && input != "\n" && input != "\r\n") {
-                kibo_process_chat(input);
-            }
+            kibo_process_chat(input);
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }

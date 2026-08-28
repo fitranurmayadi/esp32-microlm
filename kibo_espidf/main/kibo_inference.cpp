@@ -792,7 +792,7 @@ void kibo_process_chat(const std::string& user_input) {
             }
         }
         
-        if (next_token == KIBO_EOS_ID || next_token == 0) break;
+        if (next_token == KIBO_EOS_ID || next_token == 0 || next_token == 4 || next_token == 5) break;
         
         const char* token_str = KIBO_VOCAB_TABLE[next_token];
         printf("%s", token_str);
@@ -809,6 +809,10 @@ void kibo_process_chat(const std::string& user_input) {
     int64_t t_end = esp_timer_get_time();
     float elapsed_sec = (t_end - t_start) / 1000000.0f;
     float tok_per_sec = (elapsed_sec > 0.0f && gen_tokens > 0) ? ((float)gen_tokens / elapsed_sec) : 0.0f;
+    
+    kibo_telemetry.total_tokens_generated += gen_tokens;
+    kibo_telemetry.last_tokens_per_sec = tok_per_sec;
+    kibo_telemetry.last_generation_time_s = elapsed_sec;
     
     printf("\n\n⚡ [%d tokens generated in %.2f s | Speed: %.1f tok/s]\n\nUser: ", 
            gen_tokens, elapsed_sec, tok_per_sec);
