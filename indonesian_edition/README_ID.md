@@ -39,7 +39,7 @@ Seluruh proses inferensi dieksekusi 100% on-device tanpa ketergantungan eksterna
 | **v1.0** | Arduino Core 3.x | Single-Core 240MHz Baseline | **~12.3 tok/s** | [`v1.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v1.0) |
 | **v2.0** | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way Unrolled FPU | **14.2 – 15.6 tok/s** | [`v2.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v2.0) |
 | **v3.0** | ESP-IDF Native v5.x | Native FreeRTOS + Dual-Core Task Pinning | **14.5 – 15.6 tok/s** | [`v3.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v3.0) |
-| **v4.0 (Terbaru)** | ESP-IDF Native v5.x | **Universal Dual-Interface + Multi-Board Engine** | **⚡ 14.5 – 15.6 tok/s** | [`v4.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v4.0) |
+| **v4.0 (Terbaru)** | ESP-IDF Native v5.x | **Dual-Core FreeRTOS + Unrolling FPU 8-Way (W8A32)** | **⚡ 14.5 – 15.6 tok/s** | [`v4.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v4.0) |
 
 ---
 
@@ -182,7 +182,7 @@ Kibo: [NEUTRAL] Sampai jumpa sahabatku! Tetap semangat dan jaga kesehatan ya!
 
 | Branch / Tag | Framework | Arsitektur Engine Inferensi | Kecepatan Riil Hardware (Decode) | Deskripsi |
 | :--- | :--- | :--- | :---: | :--- |
-| **[`v4.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v4.0)** (`main`) | ESP-IDF Native | Universal Dual-Interface + Engine Multi-Board | **⚡ 14.5 – 15.6 tok/s** | Rilis produksi stabil dengan tool calling deterministik |
+| **[`v4.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v4.0)** (`main`) | ESP-IDF Native | Dual-Core FreeRTOS + Unrolling FPU 8-Way (W8A32) | **⚡ 14.5 – 15.6 tok/s** | Rilis produksi multi-board dengan tool calling deterministik |
 | **[`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0)** (Tag `v3.0`) | ESP-IDF v5.x Native | Native FreeRTOS + Pinning Task Dual-Core | **⚡ 14.5 – 15.6 tok/s** | Rilis milestone v3.0 native ESP-IDF paralel |
 | **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core FreeRTOS + Unrolling FPU 8-Way | **⚡ 14.2 – 15.6 tok/s** | Rilis milestone v2.0 paralel dual-core |
 | **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Skalar W8A32 | **~12.3 tok/s** | Rilis milestone v1.0 fondasi awal single-core |
