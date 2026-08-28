@@ -4,20 +4,20 @@ This document presents empirical measurements, memory hierarchy profiling, and a
 
 ---
 
-## 1. Architectural Comparison Matrix
+## 1. Engine Evolution & Version Progression Matrix
 
-| Metric / Parameter | DaveBben (`esp32-llm`) | slvDev (`esp32-ai`) | ESP32 Micro-LM v1.0 | ESP32 Micro-LM v2.0 | ESP32 Micro-LM v3.0 | **ESP32 Micro-LM v4.0 (Latest)** |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Model Parameters** | 260K | ~559K core | 1.84M dense | 1.84M dense | 1.84M dense | **1.84M Dense Transformer** |
-| **Framework** | Arduino Core | Custom C | Arduino Core 3.x | Arduino Core 3.x | ESP-IDF Native | **ESP-IDF Native (v5/v6)** |
-| **Model Architecture** | LLaMA-2 (`llama2.c`) | TinyLM | 4-Layer Transformer | 4-Layer Transformer | 4-Layer Transformer | **4-Layer Causal Transformer** |
-| **Quantization Scheme** | FP32 / custom | 4-bit | W8A32 (Weight INT8) | W8A32 (Weight INT8) | W8A32 | **W8A32 (Weight INT8, Act FP32)** |
-| **Memory Strategy** | RAM / PSRAM | SRAM + PSRAM | Octal PSRAM | Strict SRAM/PSRAM | Strict SRAM/PSRAM | **SRAM + Octal PSRAM** |
-| **Compute Kernel** | `esp-dsp` SIMD | Custom C scalar | Scalar float MAC | 8-Way Unrolled FPU | Dual-Core 8-Way | **Dual-Core 8-Way FP32 FPU** |
-| **Multi-Core Execution** | Dual-Core FreeRTOS | Single-Core | Single-Core | Single-Core (Opt) | Dual-Core (Core 0+1) | **Dual-Core Symmetrical (Core 0+1)** |
-| **Measured Hardware Speed** | ~19.1 tok/s (260K params) | ~9.5 tok/s (E2E) | **~12.3 tok/s** | **⚡ 14.2 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** |
-| **Compute Throughput** | $4.97\text{ M ops/sec}$ | $5.31\text{ M ops/sec}$ | $22.6\text{ M ops/sec}$ | $27.0\text{ M ops/sec}$ | $28.7\text{ M ops/sec}$ | $\mathbf{28.7\text{ M ops/sec}}$ 🚀 |
-| **Tool Calling & Agent** | ❌ None | ❌ None | Emotion Tokens | Emotion + Math | Bilingual Agent | **Agent (Emotions + Math Engine)** |
+| Metric / Parameter | ESP32 Micro-LM v1.0 | ESP32 Micro-LM v2.0 | ESP32 Micro-LM v3.0 | **ESP32 Micro-LM v4.0 (Latest)** |
+| :--- | :---: | :---: | :---: | :---: |
+| **Model Parameters** | 1.84M Dense (4 Layers) | 1.84M Dense (4 Layers) | 1.84M Dense (4 Layers) | **1.84M Dense Transformer** |
+| **Framework** | Arduino Core 3.x | Arduino Core 3.x | ESP-IDF Native v5.x | **ESP-IDF Native (v5/v6)** |
+| **Model Architecture** | 4-Layer Causal Decoder | 4-Layer Causal Decoder | 4-Layer Causal Decoder | **4-Layer Causal Transformer** |
+| **Quantization Scheme** | W8A32 (Weight INT8) | W8A32 (Weight INT8) | W8A32 (Weight INT8) | **W8A32 (Weight INT8, Act FP32)** |
+| **Memory Strategy** | Octal PSRAM | Strict SRAM + PSRAM | Strict SRAM + PSRAM | **SRAM (Hot) + Octal PSRAM (Weights)** |
+| **Compute Kernel** | Scalar float MAC | 8-Way Unrolled FPU | Dual-Core 8-Way FPU | **Dual-Core 8-Way FP32 FPU** |
+| **Multi-Core Execution** | Single-Core | Dual-Core Worker Task | Dual-Core Task Pinning | **Dual-Core Symmetrical (Core 0+1)** |
+| **Measured Decode Speed** | **~12.3 tok/s** | **⚡ 14.2 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** |
+| **Compute Throughput** | $22.6\text{ M ops/sec}$ | $27.0\text{ M ops/sec}$ | $28.7\text{ M ops/sec}$ | $\mathbf{28.7\text{ M ops/sec}}$ |
+| **Tool Calling & Agent** | Emotion Tokens | Emotion + Exact Math | Emotion + Exact Math | **Agent (Emotions + Math Engine)** |
 
 ---
 

@@ -43,17 +43,15 @@ Seluruh proses inferensi dieksekusi 100% on-device tanpa ketergantungan eksterna
 
 ---
 
-## 🔬 Perbandingan Ilmiah vs Proyek Open-Source Lain
+## Karya Terkait & Penghormatan Komunitas Open-Source
 
-| Metrik / Parameter | **DaveBben (`esp32-llm`)** | **slvDev (`esp32-ai`)** | **ESP32 Micro-LM v4.0 (Karya Kita)** |
-| :--- | :---: | :---: | :---: |
-| **Core Penalaran Aktif** | 260K parameter (tinyllamas) | 559K parameter | **1.84M Parameter Dense** |
-| **Kapasitas Memori Tersimpan** | 260K parameter (1.04 MB FP32) | 28.9M (Tabel Flash) | **1.84M Parameter (2.02 MB INT8 di PSRAM)** |
-| **Format Bobot** | FP32 (Float 4-byte) | INT4 (4-bit PTQ group 32) | **INT8 W8A32 Mixed Precision** |
-| **Kecepatan Riil di Silicon** | **19.13 tok/s** *(pada 260K)* | **9.5 – 9.88 tok/s** *(pada 559K)* | **⚡ 14.5 – 15.6 tok/s** *(pada 1.84M)* |
-| **Throughput Komputasi Total** | $4.97\text{ Juta ops/detik}$ | $5.31\text{ Juta ops/detik}$ | $\mathbf{28.7\text{ Juta ops/detik}}$ 🚀 |
-| **Efisiensi vs DaveBben** | 1.0x (Baseline model kecil) | 1.07x | **5.77x Lebih Padat Komputasi** |
-| **Tool Calling Deterministik** | ❌ Tidak Ada | ❌ Tidak Ada | **✅ Aritmatika Instan (<0.1ms) + Telemetri** |
+Kami menyampaikan apresiasi setinggi-tingginya kepada para pelopor komunitas open-source yang telah memajukan inferensi model bahasa di ESP32:
+
+* **[DaveBben/esp32-llm](https://github.com/DaveBben/esp32-llm)**: Memelopori porting `llama2.c` ke ESP32 dengan akselerasi vektor SIMD `esp-dsp` pada bobot FP32.
+* **[slvDev/esp32-ai](https://github.com/slvDev/esp32-ai)**: Memelopori metode streaming Per-Layer Embeddings (PLE) dari Flash SPI untuk komputasi cerita pada mikrokontroler.
+* **ESP32 Micro-LM (Karya Ini)**: Mengeksplorasi arsitektur Transformer W8A32 berbasis PSRAM penuh, unrolling FPU 8-way FP32, serta pemanggilan alat (*tool calling*) deterministik untuk dialog interaktif.
+
+Setiap proyek mengeksplorasi titik kompromi arsitektural yang berbeda dalam hierarki memori, skema kuantisasi, dan target aplikasi pada mikrokontroler ESP32-S3.
 
 ---
 

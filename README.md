@@ -50,19 +50,15 @@ The entire system executes on-device with zero external cloud dependencies. The 
 | **v3.0** | ESP-IDF Native | Native FreeRTOS + Dual-Core Task Pinning | **14.5 – 15.6 tok/s** | [`v3.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v3.0) |
 | **v4.0 (Latest / main)** | ESP-IDF Native | **Universal Dual-Interface + Multi-Board Engine** | **⚡ 14.5 – 15.6 tok/s** | [`v4.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v4.0) |
 
----
+## Related Work & Prior Art
 
-## 🔬 Architectural Comparison vs Competitor Open-Source Engines
+We acknowledge and express appreciation to the open-source community members who have advanced embedded on-chip language model inference:
 
-| Metric / Parameter | **DaveBben (`esp32-llm`)** | **slvDev (`esp32-ai`)** | **ESP32 Micro-LM v4.0 (Our Work)** |
-| :--- | :---: | :---: | :---: |
-| **Active Reasoning Core** | 260K parameters (tinyllamas) | 559K parameters | **1.84M Dense Parameters** |
-| **Stored Memory Capacity** | 260K parameters (1.04 MB FP32) | 28.9M (Flash Table) | **1.84M Parameters (2.02 MB INT8 in PSRAM)** |
-| **Weight Precision** | FP32 (Float 4-byte) | INT4 (4-bit PTQ group 32) | **INT8 W8A32 Mixed Precision** |
-| **Empirical Speed on Silicon** | **19.13 tok/s** *(at 260K)* | **9.5 – 9.88 tok/s** *(at 559K)* | **⚡ 14.5 – 15.6 tok/s** *(at 1.84M)* |
-| **Compute Density Throughput** | $4.97\text{ Million ops/sec}$ | $5.31\text{ Million ops/sec}$ | $\mathbf{28.7\text{ Million ops/sec}}$ 🚀 |
-| **Efficiency vs DaveBben** | 1.0x (Baseline tiny model) | 1.07x | **5.77x Higher Compute Density** |
-| **Deterministic Tool Calling** | ❌ None | ❌ None | **✅ Instant Math (<0.1ms) + Telemetry** |
+* **[DaveBben/esp32-llm](https://github.com/DaveBben/esp32-llm)**: Pioneered porting `llama2.c` to ESP32 with `esp-dsp` SIMD vector acceleration on FP32 weights.
+* **[slvDev/esp32-ai](https://github.com/slvDev/esp32-ai)**: Pioneered Flash-streamed Per-Layer Embeddings (PLE) for story generation on resource-constrained microcontrollers.
+* **ESP32 Micro-LM (This Project)**: Explores an in-PSRAM W8A32 Transformer forward pass, 8-way FP32 FPU unrolling, and deterministic tool calling for interactive dialogue.
+
+Each project explores distinct architectural trade-offs across storage hierarchies, quantization schemes, and target applications on the ESP32-S3.
 
 ---
 
