@@ -136,11 +136,9 @@ Kibo: [NEUTRAL] Sampai jumpa sahabatku! Tetap semangat dan jaga kesehatan ya!
 
 ---
 
-## Status Proyek & Rencana Pengembangan (Milestone v1.0)
+## Status Proyek & Milestone Pengembangan
 
-Repositori ini merupakan **tahap inisiasi / pembuktian konsep awal (v1.0)** untuk menjalankan model bahasa Transformer secara mandiri pada mikrokontroler ESP32-S3. Arsitektur saat ini berfokus pada kesederhanaan kode C++ bare-metal, kompresi memori bobot (W8A32), dan integrasi *hybrid tool* yang stabil.
-
-### Pencapaian Saat Ini (Milestone v1.0):
+### Milestone v1.0 (Fondasi Awal) — ✅ Selesai
 * [x] **Engine Bare-Metal**: Forward pass Causal Transformer 1.84M murni C++ tanpa dependensi framework ML.
 * [x] **Efisiensi Memori**: Kuantisasi bobot INT8 (W8A32) di Octal PSRAM (ukuran file 1.79 MB).
 * [x] **Manajemen KV-Cache**: Buffer konteks 128 token dinamis di PSRAM dengan mekanisme fallback SRAM.
@@ -148,11 +146,18 @@ Repositori ini merupakan **tahap inisiasi / pembuktian konsep awal (v1.0)** untu
 * [x] **Arsitektur Hybrid**: Eksekusi aritmatika deterministik instan (<0.1 ms) untuk mencegah halusinasi angka.
 * [x] **Dukungan Multi-Board**: Tervalidasi pada DevKit N16R8, Arduino Nano ESP32, dan Seeed XIAO S3.
 
-### Rencana Pengembangan Mendatang (Roadmap v2.0+):
-* [ ] **Akselerasi SIMD Xtensa**: Menerapkan instruksi assembly vektor 128-bit PIE untuk komputasi Full INT8 (W8A8).
-* [ ] **Kuantisasi Fixed-Point**: Tabel lookup integer murni untuk Softmax dan LayerNorm.
-* [ ] **Ekspansi Dataset & QAT**: Dataset percakapan yang lebih kaya dengan pelatihan *Quantization-Aware Training*.
-* [ ] **Integrasi Periferal Robot**: Tampilan ekspresi mata pada LCD bulat SPI (GC9A01) dan modul suara I2S.
+### Milestone v2.0 (Dual-Core Berkecepatan Tinggi & Hierarki Memori) — ✅ Selesai
+* [x] **Paralelisme Dual-Core FreeRTOS**: Pembagian beban komputasi matriks MLP dan Multi-Head Attention di Core 0 (PRO_CPU) dan Core 1 (APP_CPU).
+* [x] **Vektorisasi Unrolling 4-Way 32-Bit**: Pembacaan bobot terkemas 32-bit dengan 4 register FPU akumulasi independen.
+* [x] **Hierarki Memori Ketat**: Buffer aktivasi panas terkunci di SRAM internal (240 MB/s), bobot dan KV-cache di Octal PSRAM (80 MB/s).
+* [x] **Telemetri Hardware & Hook Aksi**: Diagnostik RTOS on-chip (`status`), perintah tampilan ekspresi mata, dan aktuasi servo.
+* [x] **Suite Benchmark Ilmiah**: Pengukuran empiris lengkap terdokumentasi di [`BENCHMARK.md`](../BENCHMARK.md).
+
+### Rencana Pengembangan Mendatang (Roadmap v2.1+):
+* [ ] **Assembly 128-Bit Xtensa PIE**: Kernel assembly khusus untuk kuantisasi aktivasi Full INT8 (W8A8).
+* [ ] **Kuantisasi Fixed-Point**: Tabel lookup integer murni (LUT) untuk Softmax dan LayerNorm.
+* [ ] **Ekspansi Dataset & QAT Multi-Turn**: Pelatihan *Quantization-Aware Training* untuk percakapan multi-turn yang lebih luas.
+* [ ] **Integrasi Fisik Modul Periferal**: Pengkabelan hardware fisik LCD bulat SPI GC9A01 dan audio I2S MEMS.
 
 ---
 

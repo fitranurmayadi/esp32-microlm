@@ -207,11 +207,9 @@ Kibo: [NEUTRAL] Goodbye! See you next time my friend! Stay awesome!
 
 ---
 
-## Project Status & Roadmap (v1.0 Milestone)
+## Project Status & Milestones
 
-This repository represents the **initial proof-of-concept (v1.0)** for running a self-contained generative Transformer on ESP32-S3 microcontrollers. The current architecture establishes a stable, working baseline with pure bare-metal C++, weight-only memory compression (W8A32), and hybrid tool dispatch.
-
-### Current Milestone (v1.0):
+### Milestone v1.0 (Baseline Foundation) — ✅ Completed
 * [x] **Bare-Metal Engine**: 1.84M Causal Transformer forward pass in standalone C++ without ML frameworks.
 * [x] **Memory Efficiency**: Weight-only INT8 quantization (W8A32) in Octal PSRAM (1.79 MB footprint).
 * [x] **Dynamic KV-Cache**: 128-token context buffer in PSRAM with SRAM fallback.
@@ -219,11 +217,18 @@ This repository represents the **initial proof-of-concept (v1.0)** for running a
 * [x] **Hybrid Tooling**: Deterministic arithmetic evaluation in <0.1 ms to avoid hallucinations.
 * [x] **Multi-Board Support**: Verified on DevKit N16R8, Arduino Nano ESP32, and Seeed XIAO S3.
 
-### Future Roadmap (v2.0+):
-* [ ] **Xtensa SIMD Intrinsics**: Implement 128-bit PIE vector assembly for full INT8 (W8A8) compute acceleration.
-* [ ] **Fixed-Point Quantization**: Integer lookup tables for Softmax and LayerNorm.
-* [ ] **Broader Dataset & QAT**: Expanded multi-turn dialogues with Quantization-Aware Training.
-* [ ] **Robot Peripherals**: SPI circular LCD eye expressions (GC9A01) and I2S voice input/output.
+### Milestone v2.0 (High-Throughput Dual-Core & Memory Tiering) — ✅ Completed
+* [x] **FreeRTOS Dual-Core Parallelism**: Core 0 (PRO_CPU) + Core 1 (APP_CPU) parallel MLP matrix splitting & Multi-Head Attention.
+* [x] **4-Way 32-Bit Word Unrolling**: 32-bit packed weight fetching with 4-way independent FPU accumulator unrolling.
+* [x] **Strict Memory Tiering**: Hot activations locked in internal SRAM (240 MB/s), weights and KV-cache in Octal PSRAM (80 MB/s).
+* [x] **Hardware Telemetry & Action Hooks**: Real-time on-chip RTOS diagnostics (`status`), eye display commands, and servo actuation.
+* [x] **Scientific Profiling Suite**: Comprehensive empirical measurements documented in [`BENCHMARK.md`](BENCHMARK.md).
+
+### Future Roadmap (v2.1+):
+* [ ] **128-Bit Xtensa PIE Assembly**: Custom assembly kernels for full INT8 (W8A8) activation vectorization.
+* [ ] **Fixed-Point Non-Linearities**: Integer lookup tables (LUTs) for Softmax and LayerNorm.
+* [ ] **Broader Multi-Turn Dataset & QAT**: Quantization-Aware Training for larger conversational domains.
+* [ ] **Physical Hardware Peripherals**: Wiring physical GC9A01 circular LCD and I2S MEMS audio modules.
 
 ---
 
