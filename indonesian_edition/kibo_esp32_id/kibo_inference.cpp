@@ -78,46 +78,50 @@ static inline float read_f32(const uint8_t* p) {
     return v;
 }
 
-static void layer_norm(float* out, const float* x, const float* w, const float* b, int dim) {
-    float mean = 0.0f;
-    for (int i = 0; i < dim; i++) mean += x[i];
-    mean /= dim;
-    
-    float var = 0.0f;
-    for (int i = 0; i < dim; i++) {
-        float diff = x[i] - mean;
-        var += diff * diff;
+static inline void layer_norm(float* out, const float* x, const float* w, const float* b, int dim) {
+    float mean0 = 0.0f, mean1 = 0.0f, mean2 = 0.0f, mean3 = 0.0f;
+    for (int i = 0; i < dim; i += 4) {
+        mean0 += x[i+0]; mean1 += x[i+1]; mean2 += x[i+2]; mean3 += x[i+3];
     }
-    var /= dim;
+    float mean = (mean0 + mean1 + mean2 + mean3) / dim;
+    
+    float var0 = 0.0f, var1 = 0.0f, var2 = 0.0f, var3 = 0.0f;
+    for (int i = 0; i < dim; i += 4) {
+        float d0 = x[i+0] - mean; float d1 = x[i+1] - mean;
+        float d2 = x[i+2] - mean; float d3 = x[i+3] - mean;
+        var0 += d0*d0; var1 += d1*d1; var2 += d2*d2; var3 += d3*d3;
+    }
+    float var = (var0 + var1 + var2 + var3) / dim;
     float inv_std = 1.0f / sqrtf(var + 1e-5f);
     
-    for (int i = 0; i < dim; i++) {
-        out[i] = (x[i] - mean) * inv_std * w[i] + b[i];
+    for (int i = 0; i < dim; i += 4) {
+        out[i+0] = (x[i+0] - mean) * inv_std * w[i+0] + b[i+0];
+        out[i+1] = (x[i+1] - mean) * inv_std * w[i+1] + b[i+1];
+        out[i+2] = (x[i+2] - mean) * inv_std * w[i+2] + b[i+2];
+        out[i+3] = (x[i+3] - mean) * inv_std * w[i+3] + b[i+3];
     }
 }
 
-// 4-Way 32-bit Word Unrolled Matmul (FPU Pipeline Unrolling)
-static void matmul_int8_slice(float* out, const float* x, const int8_t* w, float scale, const float* bias, int start_row, int end_row, int cols) {
+// 8-Way Direct FPU Pipeline Unrolling (Zero-Overhead Pointer Indexing)
+static inline void matmul_int8_slice(float* out, const float* x, const int8_t* w, float scale, const float* bias, int start_row, int end_row, int cols) {
     for (int r = start_row; r < end_row; r++) {
         float dot0 = 0.0f, dot1 = 0.0f, dot2 = 0.0f, dot3 = 0.0f;
+        float dot4 = 0.0f, dot5 = 0.0f, dot6 = 0.0f, dot7 = 0.0f;
         const int8_t* w_row = w + r * cols;
         int c = 0;
         
-        for (; c <= cols - 4; c += 4) {
-            uint32_t packed;
-            memcpy(&packed, &w_row[c], 4);
-            int8_t w0 = (int8_t)(packed & 0xFF);
-            int8_t w1 = (int8_t)((packed >> 8) & 0xFF);
-            int8_t w2 = (int8_t)((packed >> 16) & 0xFF);
-            int8_t w3 = (int8_t)((packed >> 24) & 0xFF);
-            
-            dot0 += x[c + 0] * (float)w0;
-            dot1 += x[c + 1] * (float)w1;
-            dot2 += x[c + 2] * (float)w2;
-            dot3 += x[c + 3] * (float)w3;
+        for (; c <= cols - 8; c += 8) {
+            dot0 += x[c + 0] * (float)w_row[c + 0];
+            dot1 += x[c + 1] * (float)w_row[c + 1];
+            dot2 += x[c + 2] * (float)w_row[c + 2];
+            dot3 += x[c + 3] * (float)w_row[c + 3];
+            dot4 += x[c + 4] * (float)w_row[c + 4];
+            dot5 += x[c + 5] * (float)w_row[c + 5];
+            dot6 += x[c + 6] * (float)w_row[c + 6];
+            dot7 += x[c + 7] * (float)w_row[c + 7];
         }
         
-        float dot = (dot0 + dot1) + (dot2 + dot3);
+        float dot = (dot0 + dot1) + (dot2 + dot3) + (dot4 + dot5) + (dot6 + dot7);
         for (; c < cols; c++) {
             dot += x[c] * (float)w_row[c];
         }
@@ -177,7 +181,7 @@ void kibo_init_dual_core() {
 
 // Parallel / Single-Core Dispatcher
 static void matmul_int8_vec(float* out, const float* x, const int8_t* w, float scale, const float* bias, int rows, int cols) {
-    if (kibo_telemetry.dual_core_active && core0_task_handle != NULL && rows >= 64) {
+    if (kibo_telemetry.dual_core_active && core0_task_handle != NULL && rows >= 512) {
         int mid = rows / 2;
         main_task_handle = xTaskGetCurrentTaskHandle();
         
@@ -203,8 +207,9 @@ static void matmul_int8_vec(float* out, const float* x, const int8_t* w, float s
     }
 }
 
-static float gelu_act(float x) {
-    return 0.5f * x * (1.0f + tanhf(0.79788456f * (x + 0.044715f * x * x * x)));
+// Fast Sigmoid GeLU: x * sigmoid(1.702 * x)
+static inline float gelu_act(float x) {
+    return x / (1.0f + expf(-1.702f * x));
 }
 
 static int effective_max_seq_len = MAX_SEQ_LEN;
@@ -246,11 +251,14 @@ static void forward_token(int token, int pos, int seq_len) {
                 int prev_kv_offset = (l * effective_max_seq_len + t) * N_EMBD + h * HEAD_DIM;
                 const float* k_h = kv_k_cache + prev_kv_offset;
                 
-                float dot = 0.0f;
-                for (int d = 0; d < HEAD_DIM; d++) {
-                    dot += q_h[d] * k_h[d];
+                float dot0 = 0.0f, dot1 = 0.0f, dot2 = 0.0f, dot3 = 0.0f;
+                for (int d = 0; d < HEAD_DIM; d += 4) {
+                    dot0 += q_h[d+0] * k_h[d+0];
+                    dot1 += q_h[d+1] * k_h[d+1];
+                    dot2 += q_h[d+2] * k_h[d+2];
+                    dot3 += q_h[d+3] * k_h[d+3];
                 }
-                dot *= scale;
+                float dot = (dot0 + dot1 + dot2 + dot3) * scale;
                 att_scores[t] = dot;
                 if (dot > max_score) max_score = dot;
             }
@@ -270,11 +278,16 @@ static void forward_token(int token, int pos, int seq_len) {
                 int prev_v_offset = (l * effective_max_seq_len + t) * N_EMBD + h * HEAD_DIM;
                 const float* v_h = kv_v_cache + prev_v_offset;
                 float a_t = att_scores[t];
-                for (int d = 0; d < HEAD_DIM; d++) {
-                    head_out[d] += a_t * v_h[d];
+                for (int d = 0; d < HEAD_DIM; d += 4) {
+                    head_out[d+0] += a_t * v_h[d+0];
+                    head_out[d+1] += a_t * v_h[d+1];
+                    head_out[d+2] += a_t * v_h[d+2];
+                    head_out[d+3] += a_t * v_h[d+3];
                 }
             }
         }
+        
+
         
         matmul_int8_vec(act_proj, att_out, blk.proj_w, blk.proj_scale, blk.proj_b, N_EMBD, N_EMBD);
         for (int i = 0; i < N_EMBD; i++) {
