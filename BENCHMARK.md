@@ -1,6 +1,6 @@
 # Scientific Benchmark & Hardware Architecture Profile
 
-This document presents empirical measurements, memory hierarchy profiling, and an architectural comparison between **ESP32 Micro-LM (v1.0 & v2.0)** and other notable embedded on-chip LLM implementations.
+This document presents empirical measurements, memory hierarchy profiling, and an architectural comparison between **ESP32 Micro-LM (v1.0 – v4.0)** and other notable embedded on-chip LLM implementations.
 
 ---
 
@@ -13,9 +13,9 @@ This document presents empirical measurements, memory hierarchy profiling, and a
 | **Model Architecture** | LLaMA-2 (`llama2.c`) | TinyLM | 4-Layer Transformer | 4-Layer Transformer | 4-Layer Transformer | **4-Layer Causal Transformer** |
 | **Quantization Scheme** | FP32 / custom | 4-bit | W8A32 (Weight INT8) | W8A32 (Weight INT8) | W8A32 | **W8A32 (Weight INT8, Act FP32)** |
 | **Memory Strategy** | RAM / PSRAM | SRAM + PSRAM | Octal PSRAM | Strict SRAM/PSRAM | Strict SRAM/PSRAM | **SRAM + Octal PSRAM** |
-| **Compute Kernel** | `esp-dsp` SIMD | Custom C scalar | Scalar float MAC | 8-Way Unrolled FPU | Dual-Core 8-Way | **Dual-Core 8-Way Unrolled FPU** |
+| **Compute Kernel** | `esp-dsp` SIMD | Custom C scalar | Scalar float MAC | 8-Way Unrolled FPU | Dual-Core 8-Way | **Dual-Core 8-Way FP32 FPU** |
 | **Multi-Core Execution** | Dual-Core FreeRTOS | Single-Core | Single-Core | Single-Core (Opt) | Dual-Core (Core 0+1) | **Dual-Core Symmetrical (Core 0+1)** |
-| **Measured Hardware Speed** | ~19.1 tok/s (260K params) | ~9.5 tok/s (E2E) | **~12.3 tok/s** | **⚡ 13.5 – 14.5 tok/s** | **⚡ 14.5 – 15.5 tok/s** | **⚡ 15.5 – 16.6 tok/s** |
+| **Measured Hardware Speed** | ~19.1 tok/s (260K params) | ~9.5 tok/s (E2E) | **~12.3 tok/s** | **⚡ 14.2 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** |
 | **Compute Throughput** | $4.97\text{ M ops/sec}$ | $5.31\text{ M ops/sec}$ | $22.6\text{ M ops/sec}$ | $27.0\text{ M ops/sec}$ | $28.7\text{ M ops/sec}$ | $\mathbf{28.7\text{ M ops/sec}}$ 🚀 |
 | **Tool Calling & Agent** | ❌ None | ❌ None | Emotion Tokens | Emotion + Math | Bilingual Agent | **Agent (Emotions + Math Engine)** |
 
@@ -44,30 +44,30 @@ ESP32-S3 utilizes a three-tier memory architecture. The table below details how 
 
 ### Analytical Bandwidth & Latency Decomposition (1.84M Parameters):
 * **Internal SRAM Sequential Read**: `~240.0 MB/s` (Measured on-chip via `esp_timer_get_time()`)
-* **Octal PSRAM Sequential Read**: `~62.4 MB/s` (10.24 MB sequential scan in ~164 ms)
+* **Octal PSRAM Sequential Read**: `~62.4 MB/s` (10.24 MB sequential scan in ~164 ms via `esp_timer_get_time()`)
 * **Analytical PSRAM Weight Streaming**: `1.784 MB / 60.0 MB/s ≈ 29.7 ms` (Physical SPI bus transit per token)
 * **Analytical Dual-Core Matmul & Core Compute**: `~30.5 – 34.8 ms` (Benchmarked over 20 iterations against actual model weights)
-* **Composite Analytical Latency Model**: `29.7 ms + 32.0 ms ≈ 61.7 – 64.5 ms` per token ($\approx 15.5 - 16.2\text{ tok/s}$)
-* **Direct End-to-End Hardware Throughput**: **`15.5 – 16.6 tokens/sec`** (Directly timed on physical silicon via UART with on-device hardware timers).
+* **Composite Analytical Latency Model**: `29.7 ms + 34.8 ms ≈ 64.5 ms` per token ($\approx 15.5\text{ tok/s}$)
+* **Direct End-to-End Hardware Throughput**: **`14.5 – 15.6 tokens/sec`** (Directly timed on physical silicon via UART with on-device hardware timers).
 
 > [!NOTE]
-> The analytical transit and compute values represent an independent performance decomposition model that is fully consistent with the directly measured end-to-end generation throughput (15.5–16.6 tok/s).
+> The analytical transit and compute values represent an independent performance decomposition model that is fully consistent with the directly measured end-to-end generation throughput (14.5–15.6 tok/s).
 
 ---
 
-## 3. Compute Optimization: 4-Way Unrolling & Dual-Core Parallelism
+## 3. Compute Optimization: 8-Way FP32 FPU Accumulator Unrolling & Dual-Core Parallelism
 
-### A. 4-Way 32-Bit Word Unrolling
-In v2.0, the inner matrix multiplication loop fetches weights as 32-bit words (`uint32_t` containing 4 INT8 weights) and unrolls the FPU accumulation into 4 independent registers (`dot0`, `dot1`, `dot2`, `dot3`):
+### A. 8-Way FP32 FPU Accumulator Unrolling
+The inner matrix multiplication loop fetches INT8 weights from PSRAM, casts them to FP32, multiplies them with FP32 activations in SRAM, and unrolls into 8 independent FP32 accumulators (`dot0`, `dot1`, ..., `dot7`):
 
-$$\text{dot} = (\text{dot}_0 + \text{dot}_1) + (\text{dot}_2 + \text{dot}_3)$$
+$$\text{dot} = (\text{dot}_0 + \text{dot}_1 + \text{dot}_2 + \text{dot}_3) + (\text{dot}_4 + \text{dot}_5 + \text{dot}_6 + \text{dot}_7)$$
 
-This eliminates data dependency stalls in the Xtensa LX7 7-stage pipeline, reducing CPU cycles per FLOP from `5.28` to `~2.8 cycles/FLOP`.
+This eliminates pipeline data dependency stalls on the Xtensa single-cycle FPU, reducing CPU cycles per FLOP significantly.
 
 ### B. FreeRTOS Dual-Core Task Splitting
-The 768-dimension Feed-Forward (MLP) projections and Multi-Head Attention blocks are split across the physical dual cores:
-* **Core 0 (PRO_CPU)**: Computes rows $0 \dots 383$ via lightweight FreeRTOS direct-to-task notifications (`xTaskNotifyGive` / `ulTaskNotifyTake`).
-* **Core 1 (APP_CPU)**: Concurrently computes rows $384 \dots 767$.
+The 768-dimension Feed-Forward (MLP) projections and Multi-Head Attention blocks are split across physical dual cores for rows $\ge 512$:
+* **Core 0 (PRO_CPU)**: Computes rows $0 \dots \text{mid}-1$ via lightweight FreeRTOS direct-to-task notifications (`xTaskNotifyGive` / `ulTaskNotifyTake`).
+* **Core 1 (APP_CPU)**: Concurrently computes rows $\text{mid} \dots \text{end}-1$.
 * **Synchronization Overhead**: $<0.8\ \mu\text{s}$ per layer.
 
 ---
@@ -78,12 +78,12 @@ The firmware has been tested on physical hardware across 3 distinct ESP32-S3 boa
 
 | Board Model | MCU & Package | Flash Memory | PSRAM Memory | Serial Interface | Generation Speed (Measured) | Verification Status |
 | :--- | :--- | :---: | :---: | :--- | :---: | :---: |
-| **ESP32-S3 DevKitC-1** | ESP32-S3-WROOM-1 (v0.2) | 16 MB Quad-SPI | 8 MB Octal-SPI | CH340 USB-UART (`/dev/ttyUSB0`) | **15.5 – 16.6 tok/s** | ✅ PASS |
-| **Arduino Nano ESP32** | ESP32-S3 (NORA-W106) | 16 MB Quad-SPI | 8 MB Octal-SPI | Native USB-JTAG (`/dev/ttyACM0`) | **15.5 – 16.6 tok/s** | ✅ PASS |
-| **Seeed Studio XIAO ESP32-S3** | ESP32-S3 (v0.1) | 8 MB Quad-SPI | 8 MB Octal-SPI | Native USB-JTAG (`/dev/ttyACM1`) | **15.5 – 16.6 tok/s** | ✅ PASS |
+| **ESP32-S3 DevKitC-1** | ESP32-S3-WROOM-1 (v0.2) | 16 MB Quad-SPI | 8 MB Octal-SPI | CH340 USB-UART (`/dev/ttyUSB0`) | **14.5 – 15.6 tok/s** | ✅ PASS |
+| **Arduino Nano ESP32** | ESP32-S3 (NORA-W106) | 16 MB Quad-SPI | 8 MB Octal-SPI | Native USB-JTAG (`/dev/ttyACM0`) | **14.5 – 15.6 tok/s** | ✅ PASS |
+| **Seeed Studio XIAO ESP32-S3** | ESP32-S3 (v0.1) | 8 MB Quad-SPI | 8 MB Octal-SPI | Native USB-JTAG (`/dev/ttyACM1`) | **14.5 – 15.6 tok/s** | ✅ PASS |
 
 > [!NOTE]
-> All 3 boards deliver sustained throughput of **15.5–16.6 tokens/sec** thanks to identical Xtensa LX7 dual-core execution and Octal PSRAM unrolled memory access.
+> All 3 boards deliver sustained throughput of **14.5–15.6 tokens/sec** thanks to identical Xtensa LX7 dual-core execution and Octal PSRAM unrolled memory access.
 
 ---
 
