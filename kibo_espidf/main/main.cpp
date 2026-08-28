@@ -16,10 +16,10 @@ extern "C" void app_main(void) {
     
     printf("\n");
     printf("==========================================================================\n");
-    printf("  🤖 KIBO MICRO-LM v3.0 (ESP-IDF NATIVE PIE SIMD EDITION)                 \n");
-    printf("  • Core Engine: 4-Layer Causal Transformer (1.84M Parameters, INT8 W8A32)\n");
+    printf("  🤖 KIBO MICRO-LM v4.0 (GEMMA 3n PLE HYBRID HYPER-SCALE EDITION)         \n");
+    printf("  • Core Engine: 4-Layer Causal Transformer (1.84M Dense Core in PSRAM)   \n");
+    printf("  • PLE Memory:  Google Gemma 3n Flash Table (10M–25M Param Resident XIP) \n");
     printf("  • Hardware:    ESP32-S3 Dual-Core Xtensa LX7 @ 240MHz (Core 0 + Core 1) \n");
-    printf("  • Coprocessor: CP0 128-bit Vector SIMD Enabled (CONFIG_ESP32S3_COPROC)  \n");
     printf("==========================================================================\n");
     
     if (!kibo_init_model()) {

@@ -18,6 +18,7 @@ venv/
 .vscode/
 .idea/
 .agents/
+external_comparisons/
 .DS_Store
 *.swp
 *~

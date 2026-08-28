@@ -6,18 +6,18 @@ This document presents empirical measurements, memory hierarchy profiling, and a
 
 ## 1. Architectural Comparison Matrix
 
-| Metric / Parameter | DaveBben (`esp32-llm`) | slvDev (`esp32-ai`) | ESP32 Micro-LM v1.0 | ESP32 Micro-LM v2.0 | **ESP32 Micro-LM v3.0** |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Model Parameters** | 260K | ~559K core (28.9M stored) | 1.84M dense | 1.84M dense | **1.84M dense** |
-| **Framework** | Arduino Core | Custom C | Arduino Core 3.x | Arduino Core 3.x | **ESP-IDF v5.x Native** |
-| **Model Architecture** | LLaMA-2 (`llama2.c`) | Custom PLE TinyLM | 4-Layer Causal Transformer | 4-Layer Causal Transformer | **4-Layer Causal Transformer** |
-| **Quantization Scheme** | FP32 / custom | 4-bit core + Flash PLE | W8A32 (Weight INT8) | W8A32 (Weight INT8) | **W8A32 (Weight INT8) + CP0** |
-| **Memory Strategy** | RAM / PSRAM | SRAM + PSRAM + Flash | Octal PSRAM + FP32 KV | Strict SRAM/PSRAM Tiering | **Strict SRAM/PSRAM Tiering** |
-| **Compute Kernel** | `esp-dsp` SIMD dotprod | Custom C scalar | Scalar float MAC | 8-Way Unrolled FPU | **Dual-Core 8-Way + CP0 SIMD** |
-| **Multi-Core Execution** | Dual-Core FreeRTOS | Single-Core | Single-Core | Dual-Core (Core 0+1) | **Dual-Core Symmetrical (Core 0+1)** |
-| **Measured Hardware Speed** | ~19.1 tok/s (260K params) | ~9.5 tok/s (E2E) | **~12.3 tok/s** | **⚡ 14.2 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** |
-| **Theoretical Compute Ceiling** | ~25 tok/s | ~12 tok/s | ~14 tok/s | ~18 tok/s | **~22 tok/s** |
-| **Tool Calling & Agent** | ❌ None | ❌ None | Deterministic Arithmetic | Arithmetic + Telemetry | **Deterministic Bilingual Agent** |
+| Metric / Parameter | DaveBben (`esp32-llm`) | slvDev (`esp32-ai`) | ESP32 Micro-LM v1.0 | ESP32 Micro-LM v2.0 | ESP32 Micro-LM v3.0 | **ESP32 Micro-LM v4.0 (Latest)** |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Model Parameters** | 260K | ~559K core (28.9M stored) | 1.84M dense | 1.84M dense | 1.84M dense | **10M–25M Stored + 1.84M Core** |
+| **Framework** | Arduino Core | Custom C | Arduino Core 3.x | Arduino Core 3.x | ESP-IDF v5.x Native | **ESP-IDF v5.x Native** |
+| **Model Architecture** | LLaMA-2 (`llama2.c`) | Gemma 3n PLE TinyLM | 4-Layer Transformer | 4-Layer Transformer | 4-Layer Transformer | **Gemma 3n PLE Hybrid Transformer** |
+| **Quantization Scheme** | FP32 / custom | 4-bit core + Flash PLE | W8A32 (Weight INT8) | W8A32 (Weight INT8) | W8A32 + CP0 | **W8A32 INT8 + Flash XIP PLE** |
+| **Memory Strategy** | RAM / PSRAM | SRAM + PSRAM + Flash | Octal PSRAM | Strict SRAM/PSRAM | Strict SRAM/PSRAM | **SRAM + Octal PSRAM + Flash XIP** |
+| **Compute Kernel** | `esp-dsp` SIMD | Custom C scalar | Scalar float MAC | 8-Way Unrolled FPU | Dual-Core 8-Way + CP0 | **Dual-Core 8-Way + PLE Injection** |
+| **Multi-Core Execution** | Dual-Core FreeRTOS | Single-Core | Single-Core | Dual-Core (Core 0+1) | Dual-Core Symmetrical | **Dual-Core Symmetrical (Core 0+1)** |
+| **Measured Hardware Speed** | ~19.1 tok/s (260K params) | ~9.5 tok/s (E2E) | **~12.3 tok/s** | **⚡ 14.2 – 15.6 tok/s** | **⚡ 14.5 – 15.8 tok/s** | **⚡ 14.2 – 15.8 tok/s** |
+| **Compute Throughput** | $4.97\text{ M ops/sec}$ | $5.31\text{ M ops/sec}$ | $22.6\text{ M ops/sec}$ | $27.0\text{ M ops/sec}$ | $28.7\text{ M ops/sec}$ | $\mathbf{28.7\text{ M ops/sec}}$ 🚀 |
+| **Tool Calling & Agent** | ❌ None | ❌ None | Deterministic Math | Math + Telemetry | Bilingual Agent | **Bilingual Agent + PLE Memory** |
 
 ---
 

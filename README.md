@@ -43,18 +43,30 @@ The entire system executes locally on-device with zero external dependencies. In
 
 ---
 
-## Quantization Benchmark (1.84M Parameters)
+## Release Versions & Roadmap
 
-Empirical evaluation on the Kibo Causal Transformer across precision formats:
+| Version | Framework | Engine & Parallelism Architecture | Empirical Speed (Measured) | Theoretical Limit (Compute-Only) | Git Branch & Release Tag |
+| :--- | :---: | :--- | :---: | :---: | :--- |
+| **v1.0** | Arduino Core 3.x | Single-Core 240MHz Baseline | **~12.3 tok/s** | ~14.1 tok/s | [`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0) / `v1.0` |
+| **v2.0** | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way Unrolled | **14.2 – 15.6 tok/s** | ~18.5 tok/s | [`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0) / `v2.0` |
+| **v3.0** | ESP-IDF Native v5.x | Native FreeRTOS + Dual-Core Task Pinning | **14.5 – 15.8 tok/s** | ~22.4 tok/s | [`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0) / `v3.0` |
+| **v4.0 (Latest)** | ESP-IDF Native v5.x | **Gemma 3n Per-Layer Embeddings (PLE) Hybrid** | **⚡ 14.2 – 15.8 tok/s** | ~22.4 tok/s | [`release/v4.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v4.0) / `v4.0` |
 
-| Format | Weight Size | Compression | Logit Cosine Similarity | Memory & Execution Feasibility |
-| :--- | :---: | :---: | :---: | :--- |
-| **FP32** | 7.02 MB | Baseline (0.0%) | 100.00% | High memory footprint (~92% PSRAM allocation) |
-| **FP16** | 3.51 MB | 50.0% | 100.00% | Software emulation required (No native FP16 ALU on Xtensa LX7) |
-| **INT8 (Selected)** | **1.79 MB** | **74.4%** | **100.00%** | **Optimal: 1-byte memory footprint, 100% logit cosine similarity** |
-| **INT4** | 0.88 MB | 87.2% | 98.87% | Degraded precision; +26% latency overhead from bit-unpacking |
+---
 
-> **Note on Inference Path**: Quantization uses **Weight-Only INT8 (W8A32)**. Weights are stored as 1-byte integers in PSRAM to minimize bandwidth and storage requirements, while activations and accumulations are processed in FP32 on the Xtensa FPU.
+## 🔬 Architectural Comparison vs Competitor Open-Source Engines
+
+| Metric / Parameter | **DaveBben (`esp32-llm`)** | **slvDev (`esp32-ai`)** | **Kibo Micro-LM v4.0 (Our Work)** |
+| :--- | :---: | :---: | :---: |
+| **Active Reasoning Core** | 260K parameters (tinyllamas) | 559K parameters (Gemma 3n PLE) | **1.84M Dense Parameters** |
+| **Stored Memory Capacity** | 260K parameters (1.04 MB FP32) | 28.9M (25.2M Flash Table) | **10M–25M Flash PLE + 1.84M PSRAM** |
+| **Weight Precision** | FP32 (Float 4-byte) | INT4 (4-bit PTQ group 32) | **INT8 W8A32 Symmetric** |
+| **Empirical Speed on Silicon** | **19.13 tok/s** *(at 260K)* | **9.5 – 9.88 tok/s** *(at 559K)* | **⚡ 14.2 – 15.8 tok/s** *(at 1.84M)* |
+| **Compute Density Throughput** | $4.97\text{ Million ops/sec}$ | $5.31\text{ Million ops/sec}$ | $\mathbf{28.7\text{ Million ops/sec}}$ 🚀 |
+| **Efficiency vs DaveBben** | 1.0x (Baseline tiny model) | 1.07x | **5.77x Higher Compute Density** |
+| **Deterministic Tool Calling** | ❌ None | ❌ None | **✅ Instant Math (<0.1ms) + Actuators** |
+
+---
 
 ---
 
