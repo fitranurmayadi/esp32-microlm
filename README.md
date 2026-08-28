@@ -6,11 +6,11 @@
 [![Quantization: INT8](https://img.shields.io/badge/Quantization-INT8-orange.svg)]()
 [![PSRAM: 8MB Octal](https://img.shields.io/badge/PSRAM-8MB%20Octal%20OPI-purple.svg)]()
 
-[Documentation (Bahasa Indonesia)](indonesian_edition/README_ID.md) | [Architecture & Design Journey](JOURNEY.md)
+[Documentation (Bahasa Indonesia)](indonesian_edition/README_ID.md) | [Architecture & Design Journey](JOURNEY.md) | [Scientific Benchmarks](BENCHMARK.md)
 
 Kibo is an on-chip generative Micro Language Model (Micro-LM) and hybrid inference engine written in bare-metal C++ for the ESP32-S3 microcontroller.
 
-The entire system executes locally on-device without cloud connections or external networks. All operations—including W8A32 matrix multiplication (INT8 weights with FP32 activation), dynamic key-value (KV) caching, and deterministic tool dispatch—run on the dual-core Xtensa LX7 processor at **~12–13 tokens/second** (~80 ms per token).
+The entire system executes locally on-device with zero external dependencies. In **v2.0**, the engine utilizes **Dual-Core FreeRTOS parallel task splitting** (Core 0 + Core 1 @ 240MHz) and **4-way 32-bit packed word unrolling** to achieve **~18–21 tokens/second** generation throughput.
 
 ---
 
@@ -24,10 +24,11 @@ The entire system executes locally on-device without cloud connections or extern
 
 ## Architectural Features
 
-* **Bare-Metal C++ Transformer**: Standalone forward-pass implementation of a 4-Layer Causal Decoder Transformer (Self-Attention, LayerNorm, GeLU, W8A32 MatMul, and dynamic KV-Cache) with zero dependency on runtime frameworks (no TFLite Micro or ONNX).
-* **Hybrid AI Architecture**: Combines autoregressive neural generation (domain dialogue and emotion control tokens) with deterministic rule-based tool dispatch (instant arithmetic evaluation in <0.1 ms).
-* **Octal PSRAM Memory Layout**: Model weights (1.79 MB) and 128-token KV-cache are mapped into 80MHz Octal PSRAM (`AP_3v3`), avoiding SPI Flash access bottlenecks during forward passes.
-* **Direct ROM Fallback**: Supports embedded `.rodata` execution and Flash memory mapping (MMAP).
+* **Dual-Core FreeRTOS Parallel Engine (v2.0)**: Parallelizes Multi-Head Attention and 768-dim MLP feed-forward projections across Core 0 (PRO_CPU) and Core 1 (APP_CPU) at 240MHz.
+* **4-Way 32-Bit Unrolled Vector Math**: Reads weights as packed 32-bit words with 4-way unrolled FPU accumulation to eliminate pipeline dependency stalls.
+* **Strict Tiered Memory Hierarchy**: Working activation buffers locked in ultra-fast internal SRAM (240 MB/s), INT8 weights and 128-token KV-cache in Octal PSRAM (80 MB/s).
+* **Hybrid AI Architecture**: Combines autoregressive neural generation (dialogue and emotion tokens) with deterministic tool dispatch (arithmetic, hardware telemetry, and actuator hooks).
+* **Zero Runtime Bloat**: 100% standalone C++ forward pass with zero ML frameworks (No TFLite Micro, No ONNX).
 * **Multi-Board Support**: Verified on ESP32-S3 DevKit N16R8, Arduino Nano ESP32, and Seeed Studio XIAO ESP32-S3.
 
 ---

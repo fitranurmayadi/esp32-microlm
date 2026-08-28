@@ -2,6 +2,9 @@
 #include <Arduino.h>
 #include "esp_partition.h"
 #include "esp_heap_caps.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
 #include <math.h>
 #include "kibo_vocab.h"
 
@@ -13,6 +16,17 @@
 #define N_LAYER 4
 #define MAX_SEQ_LEN 128
 #define VOCAB_SIZE KIBO_VOCAB_SIZE
+
+// Hardware Telemetry & Profiling Struct
+struct KiboTelemetry {
+    uint32_t total_tokens_generated;
+    float last_generation_time_s;
+    float last_tokens_per_sec;
+    uint32_t free_sram_bytes;
+    uint32_t free_psram_bytes;
+    uint32_t cpu_freq_mhz;
+    bool dual_core_active;
+};
 
 struct TransformerBlock {
     float ln1_w[N_EMBD];
@@ -55,6 +69,9 @@ struct KiboModel {
 };
 
 extern KiboModel kibo_model;
+extern KiboTelemetry kibo_telemetry;
 
 bool kibo_init_model();
+void kibo_init_dual_core();
 void kibo_process_chat(const String& user_input);
+void kibo_get_system_status(String& status_out);

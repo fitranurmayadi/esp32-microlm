@@ -9,15 +9,15 @@ void setup(void) {
     Serial.begin(115200);
     delay(1000);
     
-    Serial.println("\nkibo-mcu [1.84M params | int8 | edisi-indonesia]");
-    Serial.printf("heap: %d bytes | psram: %d bytes\n", ESP.getFreeHeap(), ESP.getFreePsram());
+    Serial.println("\nesp32 micro-lm v2.0 [1.84M params | int8 w8a32 | dual-core 240MHz | edisi-indonesia]");
+    Serial.printf("sram: %d bytes | psram: %d bytes\n", ESP.getFreeHeap(), ESP.getFreePsram());
     
     if (!kibo_init_model()) {
         Serial.println("error: gagal menginisialisasi model");
         return;
     }
     
-    Serial.println("siap. masukkan prompt (contoh: 'halo kibo', 'hitung 25 kali 4')\n");
+    Serial.println("siap. masukkan prompt (contoh: 'halo', 'hitung 25 kali 4', 'status', 'benchmark')\n");
     Serial.print("User: ");
 }
 

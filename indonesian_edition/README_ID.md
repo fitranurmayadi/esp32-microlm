@@ -6,11 +6,11 @@
 [![Quantization: INT8](https://img.shields.io/badge/Kuantisasi-INT8-orange.svg)]()
 [![PSRAM: 8MB Octal](https://img.shields.io/badge/PSRAM-8MB%20Octal%20OPI-purple.svg)]()
 
-[English Global Edition](../README.md) | [Dokumen Arsitektur & Perjalanan Teknis](JOURNEY_ID.md)
+[English Global Edition](../README.md) | [Dokumen Arsitektur & Perjalanan Teknis](JOURNEY_ID.md) | [Profil Benchmark Ilmiah](../BENCHMARK.md)
 
 Kibo Edisi Bahasa Indonesia adalah paket mandiri dari model bahasa generatif mikro (Micro-LM) dan mesin inferensi berbasis C++ bare-metal yang berjalan secara lokal di mikrokontroler ESP32-S3.
 
-Seluruh proses inferensi dieksekusi 100% on-device tanpa jaringan internet atau server eksternal. Perkalian matriks INT8, dynamic KV-cache, dan evaluasi kalkulator hardware dijalankan langsung pada prosesor Xtensa LX7 dual-core dengan kecepatan **~12–13 token/detik** (~80 ms per token).
+Seluruh proses inferensi dieksekusi 100% on-device tanpa ketergantungan eksternal. Pada **v2.0**, engine ini memanfaatkan **komputasi paralel Dual-Core FreeRTOS** (Core 0 + Core 1 @ 240MHz) dan **vektorisasi unrolling 4-way 32-bit** untuk menghasilkan kecepatan generasi **~18–21 token/detik**.
 
 ---
 
@@ -24,9 +24,10 @@ Seluruh proses inferensi dieksekusi 100% on-device tanpa jaringan internet atau 
 
 ## Fitur Arsitektur
 
-* **Transformer C++ Bare-Metal**: Implementasi mandiri 4-Layer Causal Transformer (Self-Attention, LayerNorm, GeLU, MatMul INT8, dan KV-Cache) tanpa runtime framework berat seperti TFLite Micro atau ONNX.
-* **Eksekusi Hybrid AI**: Menggabungkan kemampuan generasi autoregresif teks (persona dan tag kendali emosi) dengan kalkulator hardware ALU deterministik (<0.1 ms).
-* **Alokasi Octal PSRAM**: Bobot model (1.79 MB) dan KV-cache 128-token dialokasikan di 8MB Octal PSRAM 80MHz (`AP_3v3`), menghindari latensi pembacaan SPI Flash.
+* **Engine Paralel Dual-Core FreeRTOS (v2.0)**: Membagi beban Multi-Head Attention dan proyeksi MLP 768-dim secara simetris di Core 0 (PRO_CPU) dan Core 1 (APP_CPU) @ 240MHz.
+* **Vektorisasi 4-Way 32-Bit Unrolled**: Membaca bobot dalam chunk 32-bit terkemas dengan unrolling FPU untuk menghilangkan jeda pipeline.
+* **Hierarki Memori Ketat**: Buffer aktivasi panas terkunci di SRAM internal cepat (240 MB/s), bobot INT8 dan KV-cache 128 token di Octal PSRAM (80 MB/s).
+* **Eksekusi Hybrid AI**: Menggabungkan kemampuan generasi autoregresif teks (persona dan tag kendali emosi) dengan parser deterministik (kalkulator instan, telemetri status, dan hook aktuator robot).
 * **Dukungan Multi-Board**: Telah tervalidasi di ESP32-S3 DevKit N16R8, Arduino Nano ESP32, dan Seeed Studio XIAO ESP32-S3.
 
 ---

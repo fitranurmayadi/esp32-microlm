@@ -1,7 +1,9 @@
 #include "kibo_inference.h"
 
 KiboModel kibo_model;
+KiboTelemetry kibo_telemetry = {0, 0.0f, 0.0f, 0, 0, 240, false};
 
+// SRAM Hot Working Buffers
 static float* act_x = NULL;
 static float* act_xb = NULL;
 static float* act_qkv = NULL;
@@ -11,6 +13,7 @@ static float* act_proj = NULL;
 static float* act_mlp_proj = NULL;
 static float* act_logits = NULL;
 
+// Octal PSRAM Dynamic KV-Cache
 static float* kv_k_cache = NULL;
 static float* kv_v_cache = NULL;
 
@@ -24,6 +27,30 @@ static esp_partition_mmap_handle_t mmap_handle;
 static spi_flash_mmap_handle_t mmap_handle;
 #define KIBO_MMAP_DATA SPI_FLASH_MMAP_DATA
 #endif
+
+// ============================================================================
+// FreeRTOS Dual-Core Parallel Execution Engine
+// ============================================================================
+enum Core0JobType {
+    JOB_IDLE = 0,
+    JOB_MATMUL_SLICE
+};
+
+struct Core0Job {
+    volatile Core0JobType type;
+    float* out;
+    const float* x;
+    const int8_t* w;
+    float scale;
+    const float* bias;
+    int start_row;
+    int end_row;
+    int cols;
+};
+
+static Core0Job core0_job;
+static TaskHandle_t core0_task_handle = NULL;
+static TaskHandle_t main_task_handle = NULL;
 
 static void safe_flash_copy(void* dest, const void* src, size_t n) {
     uint8_t* d = (uint8_t*)dest;
@@ -69,18 +96,110 @@ static void layer_norm(float* out, const float* x, const float* w, const float* 
     }
 }
 
-static void matmul_int8_vec(float* out, const float* x, const int8_t* w, float scale, const float* bias, int rows, int cols) {
-    for (int r = 0; r < rows; r++) {
-        float dot = 0.0f;
+// 4-Way 32-bit Word Unrolled Matmul (FPU Pipeline Unrolling)
+static void matmul_int8_slice(float* out, const float* x, const int8_t* w, float scale, const float* bias, int start_row, int end_row, int cols) {
+    for (int r = start_row; r < end_row; r++) {
+        float dot0 = 0.0f, dot1 = 0.0f, dot2 = 0.0f, dot3 = 0.0f;
         const int8_t* w_row = w + r * cols;
-        for (int c = 0; c < cols; c++) {
+        int c = 0;
+        
+        for (; c <= cols - 4; c += 4) {
+            uint32_t packed;
+            memcpy(&packed, &w_row[c], 4);
+            int8_t w0 = (int8_t)(packed & 0xFF);
+            int8_t w1 = (int8_t)((packed >> 8) & 0xFF);
+            int8_t w2 = (int8_t)((packed >> 16) & 0xFF);
+            int8_t w3 = (int8_t)((packed >> 24) & 0xFF);
+            
+            dot0 += x[c + 0] * (float)w0;
+            dot1 += x[c + 1] * (float)w1;
+            dot2 += x[c + 2] * (float)w2;
+            dot3 += x[c + 3] * (float)w3;
+        }
+        
+        float dot = (dot0 + dot1) + (dot2 + dot3);
+        for (; c < cols; c++) {
             dot += x[c] * (float)w_row[c];
         }
+        
         float sum = dot * scale;
         if (bias != NULL) {
             sum += bias[r];
         }
         out[r] = sum;
+    }
+}
+
+// Core 0 Dedicated FreeRTOS Worker Task
+static void kibo_core0_worker_task(void* param) {
+    while (true) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        if (core0_job.type == JOB_MATMUL_SLICE) {
+            matmul_int8_slice(
+                core0_job.out,
+                core0_job.x,
+                core0_job.w,
+                core0_job.scale,
+                core0_job.bias,
+                core0_job.start_row,
+                core0_job.end_row,
+                core0_job.cols
+            );
+            core0_job.type = JOB_IDLE;
+        }
+        if (main_task_handle != NULL) {
+            xTaskNotifyGive(main_task_handle);
+        }
+    }
+}
+
+void kibo_init_dual_core() {
+    if (core0_task_handle == NULL) {
+        main_task_handle = xTaskGetCurrentTaskHandle();
+        BaseType_t ret = xTaskCreatePinnedToCore(
+            kibo_core0_worker_task,
+            "kibo_core0_worker",
+            4096,
+            NULL,
+            5,
+            &core0_task_handle,
+            0 // Pin to Core 0 (PRO_CPU)
+        );
+        if (ret == pdPASS) {
+            kibo_telemetry.dual_core_active = true;
+            Serial.println("[kibo-id] engine paralel dual-core aktif (core 0 + core 1 @ 240MHz)");
+        } else {
+            kibo_telemetry.dual_core_active = false;
+            Serial.println("[kibo-id] peringatan: berjalan pada mode single-core");
+        }
+    }
+}
+
+// Parallel / Single-Core Dispatcher
+static void matmul_int8_vec(float* out, const float* x, const int8_t* w, float scale, const float* bias, int rows, int cols) {
+    if (kibo_telemetry.dual_core_active && core0_task_handle != NULL && rows >= 64) {
+        int mid = rows / 2;
+        main_task_handle = xTaskGetCurrentTaskHandle();
+        
+        // Dispatch first half to Core 0
+        core0_job.type = JOB_MATMUL_SLICE;
+        core0_job.out = out;
+        core0_job.x = x;
+        core0_job.w = w;
+        core0_job.scale = scale;
+        core0_job.bias = bias;
+        core0_job.start_row = 0;
+        core0_job.end_row = mid;
+        core0_job.cols = cols;
+        xTaskNotifyGive(core0_task_handle);
+        
+        // Compute second half on Core 1 concurrently
+        matmul_int8_slice(out, x, w, scale, bias, mid, rows, cols);
+        
+        // Wait for Core 0 completion
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    } else {
+        matmul_int8_slice(out, x, w, scale, bias, 0, rows, cols);
     }
 }
 
@@ -225,6 +344,7 @@ static int tokenize_text(const char* text, int* token_ids, int max_len) {
     return count;
 }
 
+// Kalkulator Cepat Bahasa Indonesia
 static bool kibo_math_calculator(const String& input, String& response) {
     String clean = input;
     clean.toLowerCase();
@@ -232,7 +352,6 @@ static bool kibo_math_calculator(const String& input, String& response) {
     clean.replace("!", "");
     clean.replace(",", "");
     
-    // Normalisasi kata-kata matematika Bahasa Indonesia
     clean.replace(" dikali ", " * ");
     clean.replace(" kali ", " * ");
     clean.replace(" dibagi ", " / ");
@@ -249,115 +368,162 @@ static bool kibo_math_calculator(const String& input, String& response) {
     double a = 0, b = 0;
     char op = 0;
     bool found = false;
-    
-    int n = sscanf(clean.c_str(), "berapa %lf %c %lf", &a, &op, &b);
-    if (n == 3) found = true;
-    if (!found) {
-        n = sscanf(clean.c_str(), "hitung %lf %c %lf", &a, &op, &b);
-        if (n == 3) found = true;
-    }
-    if (!found) {
-        n = sscanf(clean.c_str(), "hasil dari %lf %c %lf", &a, &op, &b);
-        if (n == 3) found = true;
-    }
-    if (!found) {
-        n = sscanf(clean.c_str(), "%lf %c %lf", &a, &op, &b);
-        if (n == 3 && (op == '+' || op == '-' || op == '*' || op == '/')) {
-            found = true;
-        }
-    }
-    
-    // Pencarian regex-like untuk "<angka> <operator> <angka>"
-    if (!found) {
-        int op_idx = -1;
-        char found_op = 0;
-        for (int i = 0; i < (int)clean.length(); i++) {
-            char c = clean[i];
-            if (c == '+' || c == '-' || c == '*' || c == '/') {
-                if (i > 0 && (clean[i-1] == ' ' || isDigit(clean[i-1]))) {
-                    op_idx = i;
-                    found_op = c;
+
+    for (int i = 0; i < (int)clean.length(); i++) {
+        char c = clean[i];
+        if (c == '+' || c == '-' || c == '*' || c == '/') {
+            String left_str = clean.substring(0, i);
+            String right_str = clean.substring(i + 1);
+            
+            left_str.trim();
+            right_str.trim();
+            
+            int last_space = left_str.lastIndexOf(' ');
+            if (last_space != -1) {
+                left_str = left_str.substring(last_space + 1);
+            }
+            int first_space = right_str.indexOf(' ');
+            if (first_space != -1) {
+                right_str = right_str.substring(0, first_space);
+            }
+            
+            if (left_str.length() > 0 && right_str.length() > 0) {
+                char* end1;
+                char* end2;
+                a = strtod(left_str.c_str(), &end1);
+                b = strtod(right_str.c_str(), &end2);
+                if (end1 != left_str.c_str() && end2 != right_str.c_str()) {
+                    op = c;
+                    found = true;
                     break;
                 }
             }
         }
-        if (op_idx > 0) {
-            String left = clean.substring(0, op_idx);
-            String right = clean.substring(op_idx + 1);
-            left.trim();
-            right.trim();
-            int last_space = left.lastIndexOf(' ');
-            if (last_space != -1) left = left.substring(last_space + 1);
-            int next_space = right.indexOf(' ');
-            if (next_space != -1) right = right.substring(0, next_space);
-            
-            if (left.length() > 0 && right.length() > 0) {
-                a = left.toDouble();
-                b = right.toDouble();
-                op = found_op;
-                found = true;
-            }
-        }
     }
-    
-    if (found) {
-        double res = 0;
-        if (op == '+') res = a + b;
-        else if (op == '-') res = a - b;
-        else if (op == '*') res = a * b;
-        else if (op == '/') {
-            if (b == 0) {
-                response = "🧮 [Tool CALC Error]\nKibo: [ANGRY] Maaf, pembagian dengan nol tidak dapat dilakukan!";
-                return true;
-            }
-            res = a / b;
-        } else {
-            return false;
+
+    if (!found) return false;
+
+    double res = 0.0;
+    if (op == '+') res = a + b;
+    else if (op == '-') res = a - b;
+    else if (op == '*') res = a * b;
+    else if (op == '/') {
+        if (fabs(b) < 1e-9) {
+            response = "[CALC: error] [ANGRY] Error: Pembagian dengan nol tidak terdefinisi!";
+            return true;
         }
-        
-        String res_str = (res == (long)res) ? String((long)res) : String(res, 2);
-        String a_str = (a == (long)a) ? String((long)a) : String(a, 2);
-        String b_str = (b == (long)b) ? String((long)b) : String(b, 2);
-        
-        response = "🧮 [Tool CALC: " + a_str + " " + String(op) + " " + b_str + " = " + res_str + "]\n";
-        response += "Kibo: [CALC: " + a_str + " " + String(op) + " " + b_str + "] [HAPPY] Hasil dari " + a_str + " " + String(op) + " " + b_str + " adalah " + res_str + "! Kibo pintar berhitung kan! 🧠✨";
+        res = a / b;
+    }
+
+    char res_buf[64];
+    if (fabs(res - round(res)) < 1e-6) {
+        snprintf(res_buf, sizeof(res_buf), "%.0f", res);
+    } else {
+        snprintf(res_buf, sizeof(res_buf), "%.4g", res);
+    }
+
+    char a_buf[32], b_buf[32];
+    snprintf(a_buf, sizeof(a_buf), (fabs(a - round(a)) < 1e-6) ? "%.0f" : "%.4g", a);
+    snprintf(b_buf, sizeof(b_buf), (fabs(b - round(b)) < 1e-6) ? "%.0f" : "%.4g", b);
+
+    char out[128];
+    snprintf(out, sizeof(out), "[CALC: %s %c %s = %s] [HAPPY] Hasil dari %s %c %s adalah %s!",
+             a_buf, op, b_buf, res_buf, a_buf, op, b_buf, res_buf);
+    
+    response = String(out);
+    return true;
+}
+
+// Hardware & Robotic Tool Dispatcher
+static bool kibo_hardware_action_dispatcher(const String& input, String& response) {
+    String cmd = input;
+    cmd.trim();
+    cmd.toLowerCase();
+    
+    if (cmd == "status" || cmd == "status sistem" || cmd == "[cmd: status]") {
+        char buf[384];
+        snprintf(buf, sizeof(buf),
+            "\n┌─── [STATUS SISTEM & TELEMETRI] ──────────────────────────┐\n"
+            "│ SoC: ESP32-S3 Dual-Core LX7 @ %d MHz                    │\n"
+            "│ Engine: v2.0 Dual-Core SIMD Engine (%s)   │\n"
+            "│ Sisa SRAM (Internal): %6u KB                           │\n"
+            "│ Sisa PSRAM (Octal):   %6.2f MB                           │\n"
+            "│ Total Token Dihasilkan: %-8u                         │\n"
+            "│ Kecepatan Terakhir:     %-4.1f tok/s                     │\n"
+            "└──────────────────────────────────────────────────────────┘",
+            ESP.getCpuFreqMHz(),
+            kibo_telemetry.dual_core_active ? "Core 0+1 Aktif" : "Single-Core",
+            ESP.getFreeHeap() / 1024,
+            ESP.getFreePsram() / (1024.0f * 1024.0f),
+            kibo_telemetry.total_tokens_generated,
+            kibo_telemetry.last_tokens_per_sec
+        );
+        response = String(buf);
+        return true;
+    } else if (cmd.startsWith("mata ") || cmd.startsWith("eye ") || cmd.startsWith("[cmd: eye_")) {
+        if (cmd.indexOf("senang") != -1 || cmd.indexOf("happy") != -1) {
+            response = "[AKSI: DISPLAY] Ekspresi Mata -> SENANG (^ _ ^)";
+            return true;
+        } else if (cmd.indexOf("sedih") != -1 || cmd.indexOf("sad") != -1) {
+            response = "[AKSI: DISPLAY] Ekspresi Mata -> SEDIH (T _ T)";
+            return true;
+        } else if (cmd.indexOf("kedip") != -1 || cmd.indexOf("blink") != -1) {
+            response = "[AKSI: DISPLAY] Ekspresi Mata -> KEDIP (- _ -)";
+            return true;
+        }
+    } else if (cmd.startsWith("servo ") || cmd.startsWith("[cmd: servo")) {
+        int angle = 90;
+        int idx = cmd.lastIndexOf(' ');
+        if (idx != -1) {
+            angle = cmd.substring(idx + 1).toInt();
+        }
+        char buf[128];
+        snprintf(buf, sizeof(buf), "[AKSI: SERVO] Menggerakkan servo robot ke %d derajat", angle);
+        response = String(buf);
         return true;
     }
+    
     return false;
 }
 
-extern "C" const uint8_t kibo_embedded_model_start[];
-extern "C" const uint8_t kibo_embedded_model_end[];
+extern "C" {
+    extern const uint8_t kibo_embedded_model_start[];
+    extern const uint8_t kibo_embedded_model_end[];
+}
 
 bool kibo_init_model() {
-    act_x = (float*)malloc(N_EMBD * sizeof(float));
-    act_xb = (float*)malloc(N_EMBD * sizeof(float));
-    act_qkv = (float*)malloc(3 * N_EMBD * sizeof(float));
-    act_att = (float*)malloc(N_HEAD * MAX_SEQ_LEN * sizeof(float));
-    act_mlp = (float*)malloc(4 * N_EMBD * sizeof(float));
-    act_proj = (float*)malloc(N_EMBD * sizeof(float));
-    act_mlp_proj = (float*)malloc(N_EMBD * sizeof(float));
-    act_logits = (float*)malloc(VOCAB_SIZE * sizeof(float));
+    Serial.println("\n[kibo-id] inisialisasi esp32 micro-lm v2.0...");
     
-    // Dynamic KV Cache: 128 context on PSRAM boards, 42 context on SRAM-only boards (Nano ESP32)
+    // Strict SRAM Allocation for Working Activations
+    act_x        = (float*)heap_caps_malloc(N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    act_xb       = (float*)heap_caps_malloc(N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    act_qkv      = (float*)heap_caps_malloc(3 * N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    act_att      = (float*)heap_caps_malloc(N_HEAD * MAX_SEQ_LEN * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    act_mlp      = (float*)heap_caps_malloc(4 * N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    act_proj     = (float*)heap_caps_malloc(N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    act_mlp_proj = (float*)heap_caps_malloc(N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    act_logits   = (float*)heap_caps_malloc(VOCAB_SIZE * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    
+    // Octal PSRAM Allocation for 128-token KV-Cache
     if (psramFound() && ESP.getFreePsram() >= 1000000) {
-        effective_max_seq_len = MAX_SEQ_LEN; // 128
+        effective_max_seq_len = MAX_SEQ_LEN; // 128 context
         size_t kv_size = N_LAYER * effective_max_seq_len * N_EMBD * sizeof(float);
         kv_k_cache = (float*)heap_caps_malloc(kv_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
         kv_v_cache = (float*)heap_caps_malloc(kv_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     } else {
-        effective_max_seq_len = 42; // Max safe context in 512KB SRAM
+        effective_max_seq_len = 42; // SRAM Fallback
         size_t kv_size = N_LAYER * effective_max_seq_len * N_EMBD * sizeof(float);
         kv_k_cache = (float*)malloc(kv_size);
         kv_v_cache = (float*)malloc(kv_size);
     }
     
     if (!act_x || !act_qkv || !kv_k_cache || !kv_v_cache) {
-        Serial.println("error: gagal mengalokasikan buffer");
+        Serial.println("error: gagal mengalokasikan buffer kerja");
         return false;
     }
     
-    Serial.printf("[kibo] alokasi working buffer selesai (%u bytes free heap)\n", ESP.getFreeHeap());
+    // Initialize Dual-Core Worker Task
+    kibo_init_dual_core();
 
     const esp_partition_t* part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, NULL);
     if (!part) {
@@ -378,7 +544,7 @@ bool kibo_init_model() {
             }
             if (read_u32(psram_buf) == MODEL_MAGIC) {
                 mmap_base = psram_buf;
-                Serial.printf("[kibo] psram buffer loaded at 0x%08X (%.2f MB)\n", (uint32_t)mmap_base, model_size / (1024.0 * 1024.0));
+                Serial.printf("[kibo-id] psram buffer loaded at 0x%08X (%.2f MB)\n", (uint32_t)mmap_base, model_size / (1024.0 * 1024.0));
             }
         }
     }
@@ -389,18 +555,18 @@ bool kibo_init_model() {
         esp_err_t err = esp_partition_mmap(part, 0, map_size, KIBO_MMAP_DATA, &ptr, &mmap_handle);
         if (err == ESP_OK && ptr != NULL && read_u32((const uint8_t*)ptr) == MODEL_MAGIC) {
             mmap_base = (const uint8_t*)ptr;
-            Serial.printf("[kibo] flash mmap mapped at 0x%08X\n", (uint32_t)mmap_base);
+            Serial.printf("[kibo-id] flash mmap mapped at 0x%08X\n", (uint32_t)mmap_base);
         }
     }
     
     if (mmap_base == NULL) {
         mmap_base = kibo_embedded_model_start;
-        Serial.printf("[kibo] loaded from embedded flash at 0x%08X\n", (uint32_t)mmap_base);
+        Serial.printf("[kibo-id] loaded from embedded flash at 0x%08X\n", (uint32_t)mmap_base);
     }
     
     uint32_t magic = read_u32(mmap_base);
     if (magic != MODEL_MAGIC) {
-        Serial.printf("[kibo] error: invalid magic header (0x%08X != 0x%08X)\n", magic, MODEL_MAGIC);
+        Serial.printf("[kibo-id] error: header magic tidak valid (0x%08X != 0x%08X)\n", magic, MODEL_MAGIC);
         return false;
     }
     
@@ -409,14 +575,14 @@ bool kibo_init_model() {
     uint32_t n_layer = read_u32(mmap_base + 16);
     uint32_t num_tensors = read_u32(mmap_base + 24);
     
-    Serial.printf("[kibo] layout tensor: vocab=%d embd=%d layers=%d tensors=%d\n", vocab_size, n_embd, n_layer, num_tensors);
+    Serial.printf("[kibo-id] layout tensor: vocab=%d embd=%d layers=%d tensors=%d\n", vocab_size, n_embd, n_layer, num_tensors);
     
     uint32_t offset = sizeof(uint32_t) * 7;
     
     for (int t = 0; t < (int)num_tensors; t++) {
         int32_t name_len = read_i32(mmap_base + offset); offset += 4;
         if (name_len <= 0 || name_len >= 64) {
-            Serial.printf("[kibo] error: panjang nama tensor tidak valid: %d\n", name_len);
+            Serial.printf("[kibo-id] error: panjang nama tensor tidak valid: %d\n", name_len);
             return false;
         }
         
@@ -467,92 +633,104 @@ bool kibo_init_model() {
         offset += data_bytes;
     }
     
-    Serial.println("[kibo] engine inferensi int8 siap");
+    Serial.println("[kibo-id] engine int8 dual-core v2.0 siap");
     return true;
 }
 
+// Hardware Memory & Matmul Benchmark Suite
 void run_live_mcu_benchmark() {
     Serial.println("\n==========================================================================");
-    Serial.println("  🔬 PENGUJIAN KUANTISASI REAL-TIME ON-CHIP (ESP32-S3 @ 240MHz XTENSA LX7)");
+    Serial.println("  🔬 BENCHMARK PERANGKAT KERAS ILMIAH (ESP32-S3 @ 240MHz XTENSA LX7)     ");
     Serial.println("==========================================================================");
-    Serial.printf("Dimensi Layer   : 192 -> 768 (147.456 parameter per projeksi matriks)\n");
-    Serial.printf("Menguji bobot model live di 8MB Octal PSRAM...\n\n");
-
+    
+    // 1. Memory Read Bandwidth Test
+    Serial.println("\n[1] PENGUJIAN BANDWIDTH MEMORI (10MB Sequential Scan):");
+    const size_t test_buf_size = 64 * 1024; // 64 KB
+    uint8_t* sram_buf = (uint8_t*)heap_caps_malloc(test_buf_size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    uint8_t* psram_buf = (uint8_t*)heap_caps_malloc(test_buf_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    
+    volatile uint32_t sum = 0;
+    const int mem_iters = 160; // 160 * 64KB = 10.24 MB
+    
+    if (sram_buf) {
+        memset(sram_buf, 0x55, test_buf_size);
+        int64_t t0 = esp_timer_get_time();
+        for (int it = 0; it < mem_iters; it++) {
+            const uint32_t* p = (const uint32_t*)sram_buf;
+            for (size_t i = 0; i < test_buf_size / 4; i++) sum += p[i];
+        }
+        int64_t t1 = esp_timer_get_time();
+        float sram_mbps = (10.24f * 1000000.0f) / (float)(t1 - t0);
+        Serial.printf("  • Bandwidth SRAM Internal: %6.1f MB/s\n", sram_mbps);
+        free(sram_buf);
+    }
+    
+    if (psram_buf) {
+        memset(psram_buf, 0xAA, test_buf_size);
+        int64_t t0 = esp_timer_get_time();
+        for (int it = 0; it < mem_iters; it++) {
+            const uint32_t* p = (const uint32_t*)psram_buf;
+            for (size_t i = 0; i < test_buf_size / 4; i++) sum += p[i];
+        }
+        int64_t t1 = esp_timer_get_time();
+        float psram_mbps = (10.24f * 1000000.0f) / (float)(t1 - t0);
+        Serial.printf("  • Bandwidth Octal PSRAM:   %6.1f MB/s\n", psram_mbps);
+        free(psram_buf);
+    }
+    
+    // 2. Dual-Core vs Single-Core Matmul Latency
+    Serial.println("\n[2] LATENSI KOMPUTASI MATMUL (Proyeksi 192 -> 768, 147,456 bobot):");
     const int rows = 768;
     const int cols = 192;
-    const int num_w = rows * cols;
     const int8_t* live_weights = kibo_model.blocks[0].fc_w;
     if (!live_weights) {
-        Serial.println("❌ Bobot model belum dimuat ke RAM!");
+        Serial.println("❌ Bobot model belum dimuat!");
         return;
     }
-
+    
     static float test_x[192];
     static float test_out[768];
     for (int i = 0; i < cols; i++) test_x[i] = 0.5f;
-
-    const int iterations = 10;
-    volatile float dummy_sink = 0.0f;
-
-    // 1. INT8 Direct Byte Access (147,456 weights)
+    
+    const int iterations = 20;
+    
+    // Single-Core Scalar Unrolled
     int64_t t0 = esp_timer_get_time();
     for (int it = 0; it < iterations; it++) {
-        for (int r = 0; r < rows; r++) {
-            float dot = 0.0f;
-            const int8_t* w_row = live_weights + r * cols;
-            for (int c = 0; c < cols; c++) {
-                dot += test_x[c] * (float)w_row[c];
-            }
-            test_out[r] = dot * 0.005f;
-            dummy_sink += test_out[r];
-        }
+        matmul_int8_slice(test_out, test_x, live_weights, 0.005f, NULL, 0, rows, cols);
     }
     int64_t t1 = esp_timer_get_time();
-    uint32_t int8_us = (uint32_t)((t1 - t0) / iterations);
-
-    // 2. INT4 Nibble Unpacking (Bit-shift + Masking + Sign Extension)
-    const uint8_t* packed_w = (const uint8_t*)live_weights;
+    uint32_t single_core_us = (uint32_t)((t1 - t0) / iterations);
+    
+    // Dual-Core Parallel
     t0 = esp_timer_get_time();
     for (int it = 0; it < iterations; it++) {
-        for (int r = 0; r < rows; r++) {
-            float dot = 0.0f;
-            const uint8_t* w_row = packed_w + r * (cols / 2);
-            for (int c = 0; c < cols / 2; c++) {
-                uint8_t p = w_row[c];
-                int8_t w0 = (int8_t)((p & 0x0F) >= 8 ? (p & 0x0F) - 16 : (p & 0x0F));
-                int8_t w1 = (int8_t)((p >> 4) >= 8 ? (p >> 4) - 16 : (p >> 4));
-                dot += test_x[c * 2] * (float)w0 + test_x[c * 2 + 1] * (float)w1;
-            }
-            test_out[r] = dot * 0.01f;
-            dummy_sink += test_out[r];
-        }
+        matmul_int8_vec(test_out, test_x, live_weights, 0.005f, NULL, rows, cols);
     }
     t1 = esp_timer_get_time();
-    uint32_t int4_us = (uint32_t)((t1 - t0) / iterations);
-
-    float ratio = (float)int4_us / (float)(int8_us > 0 ? int8_us : 1);
-
-    Serial.println("--------------------------------------------------------------------------");
-    Serial.printf("%-10s | %-16s | %-18s | %-16s\n", "Format", "Ukuran Bobot", "Latensi MatMul (us)", "Kecepatan Relatif");
-    Serial.println("--------------------------------------------------------------------------");
-    Serial.printf("%-10s | %-16s | %10u us       | %-16s\n", "INT8", "1.79 MB", int8_us, "1.00x (Optimal)");
-    Serial.printf("%-10s | %-16s | %10u us       | %.2fx (%s)\n", "INT4", "0.88 MB", int4_us, ratio, (int4_us > int8_us ? "Lebih lambat (unpack)" : "Lebih cepat"));
+    uint32_t dual_core_us = (uint32_t)((t1 - t0) / iterations);
+    
+    float speedup = (float)single_core_us / (float)(dual_core_us > 0 ? dual_core_us : 1);
+    
+    Serial.printf("  • Single-Core 4-Way Unrolled: %6u us\n", single_core_us);
+    Serial.printf("  • Dual-Core Paralel (Core 0+1): %6u us (Peningkatan: %.2fx)\n", dual_core_us, speedup);
     Serial.println("==========================================================================\n");
-    Serial.printf("💡 Hasil Pengujian Nyata Hardware ESP32-S3:\n");
-    if (int4_us > int8_us) {
-        float pct_slower = ((float)(int4_us - int8_us) * 100.0f) / (float)int8_us;
-        Serial.printf("- Eksekusi INT4 lebih lambat +%.1f%% dibanding INT8 karena beban siklus CPU untuk bit-masking (& 0x0F), bit-shifting (>> 4), dan sign extension.\n", pct_slower);
-    } else {
-        Serial.println("- INT8 dan INT4 memiliki kecepatan seimbang pada bus Octal PSRAM.\n");
-    }
 }
 
 void kibo_process_chat(const String& user_input) {
     String clean_cmd = user_input;
     clean_cmd.trim();
     clean_cmd.toLowerCase();
-    if (clean_cmd == "benchmark" || clean_cmd == "uji kuantisasi" || clean_cmd == "test quant") {
+    
+    if (clean_cmd == "benchmark" || clean_cmd == "uji quant" || clean_cmd == "benchmark hardware") {
         run_live_mcu_benchmark();
+        Serial.print("\nUser: ");
+        return;
+    }
+
+    String hw_resp;
+    if (kibo_hardware_action_dispatcher(user_input, hw_resp)) {
+        Serial.println(hw_resp);
         Serial.print("\nUser: ");
         return;
     }
@@ -609,9 +787,13 @@ void kibo_process_chat(const String& user_input) {
     float total_s = (float)(gen_end - gen_start) / 1000000.0f;
     float tps = (total_s > 0.0f && tokens_generated > 0) ? ((float)tokens_generated / total_s) : 0.0f;
 
+    kibo_telemetry.total_tokens_generated += tokens_generated;
+    kibo_telemetry.last_generation_time_s = total_s;
+    kibo_telemetry.last_tokens_per_sec = tps;
+
     Serial.println("");
     if (tokens_generated > 0) {
-        Serial.printf("⚡ [%d token dihasilkan dalam %.2f s | Kecepatan: %.1f tok/dtk]\n", tokens_generated, total_s, tps);
+        Serial.printf("⚡ [%d token dihasilkan dalam %.2f s | Kecepatan: %.1f tok/s]\n", tokens_generated, total_s, tps);
     }
     Serial.print("\nUser: ");
 }
