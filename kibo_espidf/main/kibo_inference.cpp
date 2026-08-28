@@ -1,5 +1,4 @@
 #include "kibo_inference.h"
-#include "kibo_vocab.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,8 +9,10 @@
 #include "esp_system.h"
 #include "esp_chip_info.h"
 
-extern "C" const uint8_t kibo_embedded_model_start[] asm("_binary_kibo_model_int8_bin_start");
-extern "C" const uint8_t kibo_embedded_model_end[]   asm("_binary_kibo_model_int8_bin_end");
+extern "C" {
+    extern const uint8_t kibo_embedded_model_start[];
+    extern const uint8_t kibo_embedded_model_end[];
+}
 
 KiboModel kibo_model;
 KiboTelemetry kibo_telemetry = {0, 0.0f, 0.0f, 0, 0, 240, false, true};
@@ -144,8 +145,8 @@ static inline void matmul_int8_slice(float* out, const float* x, const int8_t* w
     }
 }
 
-// Core 0 Dedicated FreeRTOS Worker Task
-static void kibo_core0_worker_task(void* param) {
+// Core 1 Dedicated FreeRTOS Worker Task
+static void kibo_core1_worker_task(void* param) {
     while (true) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         if (core0_job.type == JOB_MATMUL_SLICE) {
@@ -171,17 +172,17 @@ void kibo_init_dual_core() {
     if (core0_task_handle == NULL) {
         main_task_handle = xTaskGetCurrentTaskHandle();
         BaseType_t ret = xTaskCreatePinnedToCore(
-            kibo_core0_worker_task,
-            "kibo_core0_worker",
+            kibo_core1_worker_task,
+            "kibo_core1_worker",
             4096,
             NULL,
             5,
             &core0_task_handle,
-            0 // Pin to Core 0 (PRO_CPU)
+            1 // Pin to Core 1 (APP_CPU) while app_main runs on Core 0 (PRO_CPU)
         );
         if (ret == pdPASS) {
             kibo_telemetry.dual_core_active = true;
-            printf("[kibo-idf] dual-core parallel engine active (core 0 + core 1 @ 240MHz)\n");
+            printf("[kibo-idf] dual-core parallel engine active (Core 0 + Core 1 @ 240MHz)\n");
         } else {
             kibo_telemetry.dual_core_active = false;
             printf("[kibo-idf] warning: running in single-core mode\n");
@@ -303,7 +304,7 @@ static void forward_token(int token, int pos, int seq_len) {
             act_mlp[i] = gelu_act(act_mlp[i]);
         }
         
-        matmul_int8_vec(act_mlp_proj, act_mlp, blk.proj_w, blk.proj_scale, blk.proj_b, N_EMBD, 4 * N_EMBD);
+        matmul_int8_vec(act_mlp_proj, act_mlp, blk.mlp_proj_w, blk.mlp_proj_scale, blk.mlp_proj_b, N_EMBD, 4 * N_EMBD);
         for (int i = 0; i < N_EMBD; i++) {
             act_x[i] += act_mlp_proj[i];
         }
@@ -328,13 +329,29 @@ static int sample_token(float* logits, int vocab_size, float temperature) {
 static int tokenize_text(const char* text, int* tokens, int max_tokens) {
     int count = 0;
     int len = strlen(text);
-    for (int i = 0; i < len && count < max_tokens; i++) {
-        char c = text[i];
-        for (int v = 0; v < VOCAB_SIZE; v++) {
-            if (kibo_vocab[v] == c) {
-                tokens[count++] = v;
-                break;
+    int i = 0;
+    
+    while (i < len && count < max_tokens) {
+        int best_token = -1;
+        int best_len = 0;
+        
+        for (int v = 0; v < KIBO_VOCAB_SIZE; v++) {
+            const char* entry = KIBO_VOCAB_TABLE[v];
+            int elen = strlen(entry);
+            if (elen > 0 && strncmp(&text[i], entry, elen) == 0) {
+                if (elen > best_len) {
+                    best_len = elen;
+                    best_token = v;
+                }
             }
+        }
+        
+        if (best_token != -1) {
+            tokens[count++] = best_token;
+            i += best_len;
+        } else {
+            tokens[count++] = 1; // <UNK>
+            i++;
         }
     }
     return count;
@@ -353,7 +370,7 @@ static bool kibo_math_calculator(const std::string& input, double& out_result, s
     if (pos == std::string::npos) pos = text.find("times");
     if (pos == std::string::npos) pos = text.find("*");
     if (pos == std::string::npos) pos = text.find("x");
-    if (pos != std::string::npos && (pos > 0 && isdigit(text[pos-1]) || text.find(" ") != std::string::npos)) {
+    if (pos != std::string::npos && ((pos > 0 && isdigit((unsigned char)text[pos-1])) || (text.find(" ") != std::string::npos))) {
         op = '*'; found_op = true;
     }
     
@@ -383,14 +400,13 @@ static bool kibo_math_calculator(const std::string& input, double& out_result, s
     
     if (!found_op) return false;
     
-    // Extract numbers before and after
     char str1[64] = {0}; char str2[64] = {0};
     int s1_idx = 0, s2_idx = 0;
     
     for (int i = (int)pos - 1; i >= 0; i--) {
-        if (isdigit(text[i]) || text[i] == '.') {
+        if (isdigit((unsigned char)text[i]) || text[i] == '.') {
             for (int j = i; j >= 0; j--) {
-                if (isdigit(text[j]) || text[j] == '.') {
+                if (isdigit((unsigned char)text[j]) || text[j] == '.') {
                     str1[s1_idx++] = text[j];
                 } else if (s1_idx > 0) break;
             }
@@ -399,9 +415,9 @@ static bool kibo_math_calculator(const std::string& input, double& out_result, s
     }
     
     for (size_t i = pos + 1; i < text.length(); i++) {
-        if (isdigit(text[i]) || text[i] == '.') {
+        if (isdigit((unsigned char)text[i]) || text[i] == '.') {
             for (size_t j = i; j < text.length(); j++) {
-                if (isdigit(text[j]) || text[j] == '.') {
+                if (isdigit((unsigned char)text[j]) || text[j] == '.') {
                     str2[s2_idx++] = text[j];
                 } else if (s2_idx > 0) break;
             }
@@ -411,7 +427,6 @@ static bool kibo_math_calculator(const std::string& input, double& out_result, s
     
     if (s1_idx == 0 || s2_idx == 0) return false;
     
-    // Reverse str1
     for (int i = 0; i < s1_idx / 2; i++) {
         char temp = str1[i]; str1[i] = str1[s1_idx - 1 - i]; str1[s1_idx - 1 - i] = temp;
     }
@@ -443,7 +458,6 @@ bool kibo_init_model() {
     act_mlp_proj = (float*)heap_caps_malloc(N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     act_logits   = (float*)heap_caps_malloc(VOCAB_SIZE * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     
-    // Octal PSRAM Allocation for 128-token KV-Cache
     effective_max_seq_len = MAX_SEQ_LEN;
     size_t kv_size = N_LAYER * effective_max_seq_len * N_EMBD * sizeof(float);
     kv_k_cache = (float*)heap_caps_malloc(kv_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
@@ -454,24 +468,23 @@ bool kibo_init_model() {
         return false;
     }
     
-    // Initialize Dual-Core Worker Task
     kibo_init_dual_core();
 
     const esp_partition_t* part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, NULL);
-    size_t model_size = (kibo_embedded_model_end > kibo_embedded_model_start) ? (size_t)(kibo_embedded_model_end - kibo_embedded_model_start) : 2 * 1024 * 1024;
+    size_t model_size = (+kibo_embedded_model_end > +kibo_embedded_model_start) ? (size_t)(kibo_embedded_model_end - kibo_embedded_model_start) : 2 * 1024 * 1024;
     
     if (part != NULL && part->size < model_size) model_size = part->size;
     
     uint8_t* psram_buf = (uint8_t*)heap_caps_malloc(model_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (psram_buf != NULL) {
-        if (kibo_embedded_model_start != NULL && (kibo_embedded_model_end > kibo_embedded_model_start)) {
+        if (+kibo_embedded_model_end > +kibo_embedded_model_start) {
             memcpy(psram_buf, kibo_embedded_model_start, model_size);
         } else if (part != NULL) {
             esp_partition_read(part, 0, psram_buf, model_size);
         }
         if (read_u32(psram_buf) == MODEL_MAGIC) {
             mmap_base = psram_buf;
-            printf("[kibo-idf] psram model buffer loaded at 0x%08X (%.2f MB)\n", (uint32_t)mmap_base, model_size / (1024.0 * 1024.0));
+            printf("[kibo-idf] psram model buffer loaded at 0x%08lX (%.2f MB)\n", (unsigned long)(uintptr_t)mmap_base, model_size / (1024.0 * 1024.0));
         }
     }
     
@@ -480,65 +493,64 @@ bool kibo_init_model() {
         return false;
     }
     
-    // Parse Model Weights
-    size_t offset = 0;
-    offset += 4; // Magic
-    offset += 24; // Header params
+    uint32_t vocab_size = read_u32(mmap_base + 4);
+    uint32_t n_embd = read_u32(mmap_base + 8);
+    uint32_t n_layer = read_u32(mmap_base + 16);
+    uint32_t num_tensors = read_u32(mmap_base + 24);
     
-    uint32_t num_tensors = read_u32(mmap_base + offset); offset += 4;
-    for (uint32_t t = 0; t < num_tensors; t++) {
-        uint32_t name_len = read_u32(mmap_base + offset); offset += 4;
-        char name[128] = {0};
-        safe_flash_copy(name, mmap_base + offset, name_len < 127 ? name_len : 127);
-        offset += name_len;
-        
-        uint32_t n_dims = read_u32(mmap_base + offset); offset += 4;
-        uint32_t shape[4] = {1, 1, 1, 1};
-        for (uint32_t d = 0; d < n_dims; d++) {
-            shape[d] = read_u32(mmap_base + offset); offset += 4;
+    printf("[kibo-idf] tensor layout: vocab=%lu embd=%lu layers=%lu tensors=%lu\n", 
+           (unsigned long)vocab_size, (unsigned long)n_embd, (unsigned long)n_layer, (unsigned long)num_tensors);
+    
+    uint32_t offset = sizeof(uint32_t) * 7;
+    
+    for (int t = 0; t < (int)num_tensors; t++) {
+        int32_t name_len = read_i32(mmap_base + offset); offset += 4;
+        if (name_len <= 0 || name_len >= 64) {
+            printf("[kibo-idf] error: invalid tensor name length: %ld\n", (long)name_len);
+            return false;
         }
         
-        uint32_t dtype = read_u32(mmap_base + offset); offset += 4;
-        float scale = read_f32(mmap_base + offset); offset += 4;
-        uint32_t data_bytes = read_u32(mmap_base + offset); offset += 4;
-        const uint8_t* data_ptr = mmap_base + offset;
+        char tensor_name[64] = {0};
+        safe_flash_copy(tensor_name, mmap_base + offset, name_len); offset += name_len;
         
-        if (strcmp(name, "tok_emb.weight") == 0) {
-            kibo_model.tok_emb_w = (const int8_t*)data_ptr;
+        int32_t is_quant = read_i32(mmap_base + offset); offset += 4;
+        float scale = read_f32(mmap_base + offset); offset += 4;
+        int32_t num_elements = read_i32(mmap_base + offset); offset += 4;
+        
+        const uint8_t* data_ptr = mmap_base + offset;
+        uint32_t data_bytes = (is_quant ? num_elements : num_elements * 4);
+        
+        std::string name(tensor_name);
+        
+        if (name == "tok_emb.weight") {
             kibo_model.tok_emb_scale = scale;
-        } else if (strcmp(name, "pos_emb.weight") == 0) {
-            kibo_model.pos_emb_w = (const int8_t*)data_ptr;
+            kibo_model.tok_emb_w = (const int8_t*)data_ptr;
+        } else if (name == "pos_emb.weight") {
             kibo_model.pos_emb_scale = scale;
-        } else if (strcmp(name, "ln_f.weight") == 0) {
-            kibo_model.ln_f_w = (const float*)data_ptr;
-        } else if (strcmp(name, "ln_f.bias") == 0) {
-            kibo_model.ln_f_b = (const float*)data_ptr;
-        } else if (strcmp(name, "head.weight") == 0) {
-            kibo_model.head_w = (const int8_t*)data_ptr;
+            kibo_model.pos_emb_w = (const int8_t*)data_ptr;
+        } else if (name == "head.weight") {
             kibo_model.head_scale = scale;
-        } else {
-            for (int l = 0; l < N_LAYER; l++) {
-                char prefix[32];
-                snprintf(prefix, sizeof(prefix), "blocks.%d.", l);
-                if (strncmp(name, prefix, strlen(prefix)) == 0) {
-                    const char* suffix = name + strlen(prefix);
-                    if (strcmp(suffix, "ln1.weight") == 0) kibo_model.blocks[l].ln1_w = (const float*)data_ptr;
-                    else if (strcmp(suffix, "ln1.bias") == 0) kibo_model.blocks[l].ln1_b = (const float*)data_ptr;
-                    else if (strcmp(suffix, "attn.qkv.weight") == 0) {
-                        kibo_model.blocks[l].qkv_w = (const int8_t*)data_ptr;
-                        kibo_model.blocks[l].qkv_scale = scale;
-                    } else if (strcmp(suffix, "attn.qkv.bias") == 0) kibo_model.blocks[l].qkv_b = (const float*)data_ptr;
-                    else if (strcmp(suffix, "attn.proj.weight") == 0) {
-                        kibo_model.blocks[l].proj_w = (const int8_t*)data_ptr;
-                        kibo_model.blocks[l].proj_scale = scale;
-                    } else if (strcmp(suffix, "attn.proj.bias") == 0) kibo_model.blocks[l].proj_b = (const float*)data_ptr;
-                    else if (strcmp(suffix, "ln2.weight") == 0) kibo_model.blocks[l].ln2_w = (const float*)data_ptr;
-                    else if (strcmp(suffix, "ln2.bias") == 0) kibo_model.blocks[l].ln2_b = (const float*)data_ptr;
-                    else if (strcmp(suffix, "mlp.fc.weight") == 0) {
-                        kibo_model.blocks[l].fc_w = (const int8_t*)data_ptr;
-                        kibo_model.blocks[l].fc_scale = scale;
-                    } else if (strcmp(suffix, "mlp.fc.bias") == 0) kibo_model.blocks[l].fc_b = (const float*)data_ptr;
-                }
+            kibo_model.head_w = (const int8_t*)data_ptr;
+        } else if (name == "ln_f.weight") {
+            safe_flash_copy(kibo_model.ln_f_w, data_ptr, num_elements * sizeof(float));
+        } else if (name == "ln_f.bias") {
+            safe_flash_copy(kibo_model.ln_f_b, data_ptr, num_elements * sizeof(float));
+        } else if (name.rfind("blocks.", 0) == 0) {
+            int layer = name[7] - '0';
+            if (layer >= 0 && layer < N_LAYER) {
+                TransformerBlock& blk = kibo_model.blocks[layer];
+                if (name.find("ln_1.weight") != std::string::npos) safe_flash_copy(blk.ln1_w, data_ptr, num_elements * sizeof(float));
+                else if (name.find("ln_1.bias") != std::string::npos) safe_flash_copy(blk.ln1_b, data_ptr, num_elements * sizeof(float));
+                else if (name.find("attn.c_attn.weight") != std::string::npos) { blk.qkv_scale = scale; blk.qkv_w = (const int8_t*)data_ptr; }
+                else if (name.find("attn.c_attn.bias") != std::string::npos) safe_flash_copy(blk.qkv_b, data_ptr, num_elements * sizeof(float));
+                else if (name.find("attn.c_proj.weight") != std::string::npos) { blk.proj_scale = scale; blk.proj_w = (const int8_t*)data_ptr; }
+                else if (name.find("attn.c_proj.bias") != std::string::npos) safe_flash_copy(blk.proj_b, data_ptr, num_elements * sizeof(float));
+                else if (name.find("ln_2.weight") != std::string::npos) safe_flash_copy(blk.ln2_w, data_ptr, num_elements * sizeof(float));
+                else if (name.find("ln_2.bias") != std::string::npos) safe_flash_copy(blk.ln2_b, data_ptr, num_elements * sizeof(float));
+                else if (name.find("mlp.c_fc.weight") != std::string::npos) { blk.fc_scale = scale; blk.fc_w = (const int8_t*)data_ptr; }
+                else if (name.find("mlp.c_fc.bias") != std::string::npos) safe_flash_copy(blk.fc_b, data_ptr, num_elements * sizeof(float));
+                else if (name.find("mlp.c_proj.weight") != std::string::npos) { blk.mlp_proj_scale = scale; blk.mlp_proj_w = (const int8_t*)data_ptr; }
+                else if (name.find("mlp.c_proj.bias") != std::string::npos) safe_flash_copy(blk.mlp_proj_b, data_ptr, num_elements * sizeof(float));
             }
         }
         
@@ -641,12 +653,12 @@ void kibo_process_chat(const std::string& user_input) {
         forward_token(cur_token, pos, effective_max_seq_len);
         int next_token = sample_token(act_logits, VOCAB_SIZE, 0.7f);
         
-        if (next_token == 0 || next_token == 1 || kibo_vocab[next_token] == '\n') {
+        if (next_token == 0 || next_token == 1 || next_token == 3) {
             break;
         }
         
-        char c = kibo_vocab[next_token];
-        putchar(c);
+        const char* word = KIBO_VOCAB_TABLE[next_token];
+        printf("%s", word);
         fflush(stdout);
         
         cur_token = next_token;
