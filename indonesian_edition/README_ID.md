@@ -180,14 +180,14 @@ Kibo: [NEUTRAL] Sampai jumpa sahabatku! Tetap semangat dan jaga kesehatan ya!
 
 ## 🔖 Versi Rilis & Strategi Percabangan Git (Branching)
 
-| Branch / Tag | Framework | Engine Inferensi | Kecepatan Riil Hardware | Batas Teoretis Siklus ALU | Deskripsi |
-| :--- | :--- | :--- | :---: | :---: | :--- |
-| **`main`** | Universal | Dual-Core 8-Way FPU + Port ESP-IDF | **⚡ 14.5 – 15.6 tok/s** | ~22 tok/s | Rilis default produksi dengan alat matematika bilingual & telemetri |
-| **[`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0)** (Tag `v3.0`) | ESP-IDF v5.x Native | Dual-Core Paralel + Coprocessor CP0 | **⚡ 14.5 – 15.6 tok/s** | ~22 tok/s | Rilis milestone v3.0 native ESP-IDF dengan dukungan CP0 SIMD |
-| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way FPU | **⚡ 14.2 – 15.6 tok/s** | ~18 tok/s | Rilis milestone v2.0 dual-core 240MHz paralel |
-| **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Skalar W8A32 | **~12.3 tok/s** | ~14 tok/s | Rilis milestone v1.0 fondasi awal single-core |
+| Branch / Tag | Framework | Arsitektur Engine Inferensi | Kecepatan Riil Hardware (Decode) | Deskripsi |
+| :--- | :--- | :--- | :---: | :--- |
+| **[`v4.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v4.0)** (`main`) | ESP-IDF Native | Universal Dual-Interface + Engine Multi-Board | **⚡ 14.5 – 15.6 tok/s** | Rilis produksi stabil dengan tool calling deterministik |
+| **[`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0)** (Tag `v3.0`) | ESP-IDF v5.x Native | Native FreeRTOS + Pinning Task Dual-Core | **⚡ 14.5 – 15.6 tok/s** | Rilis milestone v3.0 native ESP-IDF paralel |
+| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core FreeRTOS + Unrolling FPU 8-Way | **⚡ 14.2 – 15.6 tok/s** | Rilis milestone v2.0 paralel dual-core |
+| **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Skalar W8A32 | **~12.3 tok/s** | Rilis milestone v1.0 fondasi awal single-core |
 
-> **Catatan Fisika Latensi (1.84M Parameter)**: Setiap 1 token yang digenerasikan membaca 1.79 MB data bobot model melewati bus Octal PSRAM SPI 80MHz (transit memori ~30 ms) ditambah komputasi dual-core CPU (~35 ms), menghasilkan batas throughput fisik terukur ~65 ms per token (14.5–15.6 token/detik).
+> **Model Dekomposisi Latensi (1.84M Parameter)**: Membandingkan estimasi streaming bus PSRAM (~29.7 ms) dan komputasi dual-core CPU (~34.8 ms), menghasilkan model analitis (~64.5 ms per token) yang konsisten dengan pengukuran timer decode generasi on-chip (14.5–15.6 token/detik).
 
 
 ---
