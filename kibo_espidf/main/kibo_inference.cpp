@@ -132,9 +132,9 @@ static inline void layer_norm(float* out, const float* x, const float* w, const 
     }
 }
 
-// Fast Sigmoid GeLU: x * sigmoid(1.702 * x)
+// Exact Mathematical PyTorch GELU: 0.5 * x * (1 + erf(x / sqrt(2)))
 static inline float gelu_act(float x) {
-    return x / (1.0f + expf(-1.702f * x));
+    return 0.5f * x * (1.0f + erff(x * 0.7071067811865475f));
 }
 
 // 8-Way Direct FPU Pipeline Unrolling
@@ -174,6 +174,7 @@ static inline void matmul_int8_slice(float* out, const float* x, const int8_t* w
 static void kibo_core1_worker_task(void* param) {
     while (true) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        __asm__ __volatile__("memw" : : : "memory");
         if (core_job.type == JOB_MATMUL_SLICE) {
             matmul_int8_slice(
                 core_job.out,
@@ -187,6 +188,7 @@ static void kibo_core1_worker_task(void* param) {
             );
             core_job.type = JOB_IDLE;
         }
+        __asm__ __volatile__("memw" : : : "memory");
         if (main_task_handle != NULL) {
             xTaskNotifyGive(main_task_handle);
         }
@@ -221,6 +223,9 @@ static void matmul_int8_vec(float* out, const float* x, const int8_t* w, float s
         int mid = rows / 2;
         main_task_handle = xTaskGetCurrentTaskHandle();
         
+        // Clear any stale notifications
+        ulTaskNotifyTake(pdTRUE, 0);
+        
         // Dispatch first half to Core 1
         core_job.type = JOB_MATMUL_SLICE;
         core_job.out = out;
@@ -231,6 +236,7 @@ static void matmul_int8_vec(float* out, const float* x, const int8_t* w, float s
         core_job.start_row = 0;
         core_job.end_row = mid;
         core_job.cols = cols;
+        __asm__ __volatile__("memw" : : : "memory");
         xTaskNotifyGive(core1_task_handle);
         
         // Compute second half on Core 0 concurrently
@@ -238,6 +244,7 @@ static void matmul_int8_vec(float* out, const float* x, const int8_t* w, float s
         
         // Wait for Core 1 completion
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        __asm__ __volatile__("memw" : : : "memory");
     } else {
         matmul_int8_slice(out, x, w, scale, bias, 0, rows, cols);
     }
@@ -717,6 +724,19 @@ void kibo_process_chat(const std::string& user_input) {
     if (clean_cmd == "benchmark" || clean_cmd == "test quant") {
         run_live_mcu_benchmark();
         printf("\nUser: ");
+        fflush(stdout);
+        return;
+    }
+    
+    if (clean_cmd == "status") {
+        printf("\n==========================================================================\n");
+        printf("  🤖 KIBO v4.0 RUNTIME STATUS & TELEMETRY                                 \n");
+        printf("  • Total Tokens Generated: %lu tokens\n", (unsigned long)kibo_telemetry.total_tokens_generated);
+        printf("  • Last Generation Speed:  %.1f tok/s\n", kibo_telemetry.last_tokens_per_sec);
+        printf("  • Free Internal SRAM:     %lu bytes\n", (unsigned long)esp_get_free_internal_heap_size());
+        printf("  • Free Octal PSRAM:       %lu bytes\n", (unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+        printf("  • Gemma 3n PLE Table:     Flash XIP Resident (10M–25M Param Scale)\n");
+        printf("==========================================================================\n\nUser: ");
         fflush(stdout);
         return;
     }

@@ -82,8 +82,8 @@ def export_v4_ple_model():
             # Quantize 2D weight matrices & PLE table to INT8; keep 1D LayerNorm/Biases in FP32
             if ("weight" in name or "ple_table" in name) and data.ndim == 2:
                 max_val = float(abs(data).max())
-                scale = max_val / 127.0 if max_val > 0 else 1.0
-                q_data = (data / scale).round().clip(-128, 127).astype('int8')
+                scale = max_val / 127.0 if max_val > 0 else 0.0
+                q_data = (data / scale).round().clip(-128, 127).astype('int8') if scale > 0 else np.zeros_like(data, dtype=np.int8)
                 
                 f.write(struct.pack('ifi', 1, scale, num_elements))
                 f.write(q_data.tobytes())
