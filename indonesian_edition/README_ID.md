@@ -34,26 +34,26 @@ Seluruh proses inferensi dieksekusi 100% on-device tanpa ketergantungan eksterna
 
 ## Tabel Versi Rilis & Roadmap
 
-| Versi | Framework | Arsitektur Engine & Paralelisme | Kecepatan Riil Hardware | Batas Teoretis (Hanya Komputasi) | Git Branch & Release Tag |
-| :--- | :---: | :--- | :---: | :---: | :--- |
-| **v1.0** | Arduino Core 3.x | Single-Core 240MHz Baseline | **~12.3 tok/s** | ~14.1 tok/s | [`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0) / `v1.0` |
-| **v2.0** | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way Unrolled | **14.2 – 15.6 tok/s** | ~18.5 tok/s | [`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0) / `v2.0` |
-| **v3.0** | ESP-IDF Native v5.x | Native FreeRTOS + Dual-Core Task Pinning | **14.5 – 15.8 tok/s** | ~22.4 tok/s | [`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0) / `v3.0` |
-| **v4.0 (Terbaru)** | ESP-IDF Native v5.x | **Gemma 3n Per-Layer Embeddings (PLE) Hybrid** | **⚡ 14.2 – 15.8 tok/s** | ~22.4 tok/s | [`release/v4.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v4.0) / `v4.0` |
+| Versi | Framework | Arsitektur Engine & Paralelisme | Kecepatan Riil Hardware | Git Branch & Release Tag |
+| :--- | :---: | :--- | :---: | :--- |
+| **v1.0** | Arduino Core 3.x | Single-Core 240MHz Baseline | **~12.3 tok/s** | [`v1.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v1.0) |
+| **v2.0** | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way Unrolled FPU | **14.2 – 15.6 tok/s** | [`v2.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v2.0) |
+| **v3.0** | ESP-IDF Native v5.x | Native FreeRTOS + Dual-Core Task Pinning | **14.5 – 15.6 tok/s** | [`v3.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v3.0) |
+| **v4.0 (Terbaru)** | ESP-IDF Native v5.x | **Universal Dual-Interface + Multi-Board Engine** | **⚡ 14.5 – 15.6 tok/s** | [`v4.0`](https://github.com/fitranurmayadi/esp32-microlm/releases/tag/v4.0) |
 
 ---
 
 ## 🔬 Perbandingan Ilmiah vs Proyek Open-Source Lain
 
-| Metrik / Parameter | **DaveBben (`esp32-llm`)** | **slvDev (`esp32-ai`)** | **Kibo Micro-LM v4.0 (Karya Kita)** |
+| Metrik / Parameter | **DaveBben (`esp32-llm`)** | **slvDev (`esp32-ai`)** | **ESP32 Micro-LM v4.0 (Karya Kita)** |
 | :--- | :---: | :---: | :---: |
-| **Core Penalaran Aktif** | 260K parameter (tinyllamas) | 559K parameter (Gemma 3n PLE) | **1.84M Parameter Dense** |
-| **Kapasitas Memori Tersimpan** | 260K parameter (1.04 MB FP32) | 28.9M (25.2M Tabel Flash) | **10M–25M Flash PLE + 1.84M PSRAM** |
-| **Format Bobot** | FP32 (Float 4-byte) | INT4 (4-bit PTQ group 32) | **INT8 W8A32 Simetris** |
-| **Kecepatan Riil di Silicon** | **19.13 tok/s** *(pada 260K)* | **9.5 – 9.88 tok/s** *(pada 559K)* | **⚡ 14.2 – 15.8 tok/s** *(pada 1.84M)* |
+| **Core Penalaran Aktif** | 260K parameter (tinyllamas) | 559K parameter | **1.84M Parameter Dense** |
+| **Kapasitas Memori Tersimpan** | 260K parameter (1.04 MB FP32) | 28.9M (Tabel Flash) | **1.84M Parameter (2.02 MB INT8 di PSRAM)** |
+| **Format Bobot** | FP32 (Float 4-byte) | INT4 (4-bit PTQ group 32) | **INT8 W8A32 Mixed Precision** |
+| **Kecepatan Riil di Silicon** | **19.13 tok/s** *(pada 260K)* | **9.5 – 9.88 tok/s** *(pada 559K)* | **⚡ 14.5 – 15.6 tok/s** *(pada 1.84M)* |
 | **Throughput Komputasi Total** | $4.97\text{ Juta ops/detik}$ | $5.31\text{ Juta ops/detik}$ | $\mathbf{28.7\text{ Juta ops/detik}}$ 🚀 |
 | **Efisiensi vs DaveBben** | 1.0x (Baseline model kecil) | 1.07x | **5.77x Lebih Padat Komputasi** |
-| **Tool Calling Deterministik** | ❌ Tidak Ada | ❌ Tidak Ada | **✅ Aritmatika Instan (<0.1ms) + Robotik** |
+| **Tool Calling Deterministik** | ❌ Tidak Ada | ❌ Tidak Ada | **✅ Aritmatika Instan (<0.1ms) + Telemetri** |
 
 ---
 

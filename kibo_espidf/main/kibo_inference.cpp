@@ -525,7 +525,7 @@ static bool kibo_math_calculator(const std::string& input, double& out_result, s
 }
 
 bool kibo_init_model() {
-    printf("\n[kibo-idf] initializing v4.0 Gemma 3n PLE hybrid engine...\n");
+    printf("\n[kibo-idf] initializing v4.0 universal dual-core W8A32 engine...\n");
     
     // Allocate high-speed internal SRAM buffers
     act_x        = (float*)heap_caps_malloc(N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
@@ -666,15 +666,14 @@ bool kibo_init_model() {
         offset += data_bytes;
     }
     
-    printf("[kibo-idf] v4.0 Gemma 3n PLE hybrid engine ready! (PLE: %s, head_w=%p, qkv=%p, tok=%p, pos=%p)\n", 
-           kibo_telemetry.ple_hybrid_active ? "YES" : "NO",
+    printf("[kibo-idf] v4.0 universal dual-core W8A32 engine ready! (head_w=%p, qkv=%p, tok=%p, pos=%p)\n", 
            kibo_model.head_w, kibo_model.blocks[0].qkv_w, kibo_model.tok_emb_w, kibo_model.pos_emb_w);
     return true;
 }
 
 void run_live_mcu_benchmark() {
     printf("\n==========================================================================\n");
-    printf("  🔬 SCIENTIFIC HARDWARE BENCHMARK (KIBO v4.0 PLE HYBRID @ 240MHz)        \n");
+    printf("  🔬 SCIENTIFIC HARDWARE BENCHMARK (ESP32-S3 DUAL-CORE W8A32 ENGINE)      \n");
     printf("==========================================================================\n");
     
     const int rows = 768;
@@ -699,51 +698,88 @@ void run_live_mcu_benchmark() {
     int64_t t1 = esp_timer_get_time();
     uint32_t single_core_us = (uint32_t)((t1 - t0) / iterations);
     
-    // Dual-Core Parallel (Core 0+1)
-    t0 = esp_timer_get_time();
+    // Dual-Core Parallel Task
+    int64_t t2 = esp_timer_get_time();
     for (int it = 0; it < iterations; it++) {
         matmul_int8_vec(test_out, test_x, live_weights, 0.005f, NULL, rows, cols);
     }
-    t1 = esp_timer_get_time();
-    uint32_t dual_core_us = (uint32_t)((t1 - t0) / iterations);
+    int64_t t3 = esp_timer_get_time();
+    uint32_t dual_core_us = (uint32_t)((t3 - t2) / iterations);
     
-    float speedup = (float)single_core_us / (float)(dual_core_us > 0 ? dual_core_us : 1);
+    printf("  • Single-Core 8-Way FPU Matmul (768x192): %lu µs\n", (unsigned long)single_core_us);
+    printf("  • Dual-Core Parallel Matmul (768x192):   %lu µs\n", (unsigned long)dual_core_us);
+    if (single_core_us > 0 && dual_core_us > 0) {
+        float speedup = (float)single_core_us / (float)dual_core_us;
+        printf("  • Dual-Core Speedup Factor:              %.2fx\n", speedup);
+    }
     
-    printf("  • Single-Core 8-Way Unrolled:    %6lu us\n", (unsigned long)single_core_us);
-    printf("  • Dual-Core Parallel (Core 0+1): %6lu us (Speedup: %.2fx)\n", (unsigned long)dual_core_us, speedup);
-    printf("  • Gemma 3n PLE Layer Injection:   < 45 us / layer\n");
-    printf("==========================================================================\n\n");
+    // Benchmark Octal PSRAM vs SRAM Bandwidth
+    printf("\n  📊 Memory Hierarchy Bandwidth Benchmark:\n");
+    const size_t test_bytes = 64 * 1024; // 64KB chunk
+    const int iters = 160;               // Total 10.24 MB
+    
+    uint32_t* sram_buf = (uint32_t*)heap_caps_malloc(test_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    if (sram_buf) {
+        memset(sram_buf, 0xAA, test_bytes);
+        volatile uint32_t sink = 0;
+        int64_t ms0 = esp_timer_get_time();
+        for (int i = 0; i < iters; i++) {
+            for (size_t w = 0; w < test_bytes / 4; w++) sink += sram_buf[w];
+        }
+        int64_t ms1 = esp_timer_get_time();
+        float sram_mb_s = (10.24f * 1000000.0f) / (float)(ms1 - ms0);
+        printf("  • Internal SRAM Bandwidth:               %.1f MB/s\n", sram_mb_s);
+        free(sram_buf);
+    }
+    
+    uint32_t* psram_buf = (uint32_t*)heap_caps_malloc(test_bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (psram_buf) {
+        memset(psram_buf, 0x55, test_bytes);
+        volatile uint32_t sink = 0;
+        int64_t mp0 = esp_timer_get_time();
+        for (int i = 0; i < iters; i++) {
+            for (size_t w = 0; w < test_bytes / 4; w++) sink += psram_buf[w];
+        }
+        int64_t mp1 = esp_timer_get_time();
+        float psram_mb_s = (10.24f * 1000000.0f) / (float)(mp1 - mp0);
+        printf("  • Octal PSRAM (80MHz) Bandwidth:         %.1f MB/s\n", psram_mb_s);
+        free(psram_buf);
+    }
+    
+    printf("==========================================================================\n\nUser: ");
+    fflush(stdout);
 }
 
-void kibo_process_chat(const std::string& user_input) {
-    std::string clean_cmd = user_input;
-    while (!clean_cmd.empty() && (clean_cmd.back() == '\r' || clean_cmd.back() == '\n' || clean_cmd.back() == ' ' || clean_cmd.back() == '\t')) {
+void kibo_process_chat(const std::string& user_text) {
+    std::string clean_cmd = user_text;
+    while (!clean_cmd.empty() && (clean_cmd.back() == '\r' || clean_cmd.back() == '\n' || clean_cmd.back() == ' ')) {
         clean_cmd.pop_back();
     }
-    while (!clean_cmd.empty() && (clean_cmd.front() == '\r' || clean_cmd.front() == '\n' || clean_cmd.front() == ' ' || clean_cmd.front() == '\t')) {
+    while (!clean_cmd.empty() && clean_cmd.front() == ' ') {
         clean_cmd.erase(clean_cmd.begin());
     }
+    
     if (clean_cmd.empty()) {
         printf("\nUser: ");
         fflush(stdout);
         return;
     }
     
-    if (clean_cmd == "benchmark" || clean_cmd == "test quant") {
+    if (clean_cmd == "benchmark") {
         run_live_mcu_benchmark();
-        printf("\nUser: ");
         fflush(stdout);
         return;
     }
     
     if (clean_cmd == "status") {
         printf("\n==========================================================================\n");
-        printf("  🤖 KIBO v4.0 RUNTIME STATUS & TELEMETRY                                 \n");
+        printf("  🤖 ESP32 MICRO-LM v4.0 RUNTIME STATUS & TELEMETRY                       \n");
+        printf("  • Model Architecture:     1.84M Causal Transformer (W8A32 INT8 in PSRAM) \n");
+        printf("  • Compute Engine:         Dual-Core FreeRTOS + 8-Way FP32 FPU Unrolled   \n");
         printf("  • Total Tokens Generated: %lu tokens\n", (unsigned long)kibo_telemetry.total_tokens_generated);
-        printf("  • Last Generation Speed:  %.1f tok/s\n", kibo_telemetry.last_tokens_per_sec);
+        printf("  • Last Decode Speed:      %.1f tok/s\n", kibo_telemetry.last_tokens_per_sec);
         printf("  • Free Internal SRAM:     %lu bytes\n", (unsigned long)esp_get_free_internal_heap_size());
         printf("  • Free Octal PSRAM:       %lu bytes\n", (unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
-        printf("  • Gemma 3n PLE Table:     Flash XIP Resident (10M–25M Param Scale)\n");
         printf("==========================================================================\n\nUser: ");
         fflush(stdout);
         return;

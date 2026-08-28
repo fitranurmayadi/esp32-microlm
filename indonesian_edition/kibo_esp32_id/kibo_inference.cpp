@@ -458,7 +458,7 @@ static bool kibo_hardware_action_dispatcher(const String& input, String& respons
         snprintf(buf, sizeof(buf),
             "\n┌─── [STATUS SISTEM & TELEMETRI] ──────────────────────────┐\n"
             "│ SoC: ESP32-S3 Dual-Core LX7 @ %d MHz                    │\n"
-            "│ Engine: v2.0 Dual-Core SIMD Engine (%s)   │\n"
+            "│ Engine: v4.0 Dual-Core W8A32 (%s)      │\n"
             "│ Sisa SRAM (Internal): %6u KB                           │\n"
             "│ Sisa PSRAM (Octal):   %6.2f MB                           │\n"
             "│ Total Token Dihasilkan: %-8u                         │\n"
@@ -505,7 +505,7 @@ extern "C" {
 }
 
 bool kibo_init_model() {
-    Serial.println("\n[kibo-id] inisialisasi esp32 micro-lm v2.0...");
+    Serial.println("\n[kibo-id] inisialisasi esp32 micro-lm v4.0...");
     
     // Strict SRAM Allocation for Working Activations
     act_x        = (float*)heap_caps_malloc(N_EMBD * sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
@@ -646,7 +646,7 @@ bool kibo_init_model() {
         offset += data_bytes;
     }
     
-    Serial.println("[kibo-id] engine int8 dual-core v2.0 siap");
+    Serial.println("[kibo-id] engine int8 dual-core v4.0 siap");
     return true;
 }
 

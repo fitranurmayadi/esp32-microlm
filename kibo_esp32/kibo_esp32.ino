@@ -9,7 +9,7 @@ void setup(void) {
     Serial.begin(115200);
     delay(1000);
     
-    Serial.println("\nesp32 micro-lm v2.0 [1.84M params | int8 w8a32 | dual-core 240MHz]");
+    Serial.println("\nesp32 micro-lm v4.0 [1.84M params | int8 w8a32 | dual-core 8-way fpu]");
     Serial.printf("sram: %d bytes | psram: %d bytes\n", ESP.getFreeHeap(), ESP.getFreePsram());
     
     if (!kibo_init_model()) {
