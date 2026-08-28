@@ -716,7 +716,7 @@ void run_live_mcu_benchmark() {
     
     const int iterations = 20;
     
-    // Single-Core Scalar Unrolled
+    // Single-Core 8-Way Unrolled FPU
     int64_t t0 = esp_timer_get_time();
     for (int it = 0; it < iterations; it++) {
         matmul_int8_slice(test_out, test_x, live_weights, 0.005f, NULL, 0, rows, cols);
@@ -724,7 +724,7 @@ void run_live_mcu_benchmark() {
     int64_t t1 = esp_timer_get_time();
     uint32_t single_core_us = (uint32_t)((t1 - t0) / iterations);
     
-    // Dual-Core Parallel
+    // Dual-Core Parallel (Core 0+1)
     t0 = esp_timer_get_time();
     for (int it = 0; it < iterations; it++) {
         matmul_int8_vec(test_out, test_x, live_weights, 0.005f, NULL, rows, cols);
@@ -734,7 +734,7 @@ void run_live_mcu_benchmark() {
     
     float speedup = (float)single_core_us / (float)(dual_core_us > 0 ? dual_core_us : 1);
     
-    Serial.printf("  • Single-Core 4-Way Unrolled: %6u us\n", single_core_us);
+    Serial.printf("  • Single-Core 8-Way Unrolled:  %6u us\n", single_core_us);
     Serial.printf("  • Dual-Core Parallel (Core 0+1): %6u us (Speedup: %.2fx)\n", dual_core_us, speedup);
     Serial.println("==========================================================================\n");
 }

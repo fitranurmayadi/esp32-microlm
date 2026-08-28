@@ -153,14 +153,20 @@ Kibo: [NEUTRAL] Sampai jumpa sahabatku! Tetap semangat dan jaga kesehatan ya!
 * [x] **Telemetri Hardware & Hook Aksi**: Diagnostik RTOS on-chip (`status`), perintah tampilan ekspresi mata, dan aktuasi servo.
 * [x] **Suite Benchmark Ilmiah**: Pengukuran empiris lengkap terdokumentasi di [`BENCHMARK.md`](../BENCHMARK.md).
 
-### Rencana Pengembangan Mendatang (Roadmap v2.1+):
-* [ ] **Assembly 128-Bit Xtensa PIE**: Kernel assembly khusus untuk kuantisasi aktivasi Full INT8 (W8A8).
-* [ ] **Kuantisasi Fixed-Point**: Tabel lookup integer murni (LUT) untuk Softmax dan LayerNorm.
-* [ ] **Ekspansi Dataset & QAT Multi-Turn**: Pelatihan *Quantization-Aware Training* untuk percakapan multi-turn yang lebih luas.
-* [ ] **Integrasi Fisik Modul Periferal**: Pengkabelan hardware fisik LCD bulat SPI GC9A01 dan audio I2S MEMS.
+---
+
+## 🔖 Versi Rilis & Strategi Percabangan Git (Branching)
+
+| Branch / Tag | Framework | Engine Inferensi | Kecepatan Terukur | Deskripsi |
+| :--- | :--- | :--- | :---: | :--- |
+| **`main`** | Arduino Core 3.x | Dual-Core 8-Way FPU | **⚡ 15.6 tok/s** | Rilis default stabil dengan alat matematika bilingual & telemetri |
+| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core 8-Way FPU | **⚡ 15.6 tok/s** | Rilis milestone v2.0 paralel FreeRTOS |
+| **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Skalar | **~12.3 tok/s** | Rilis milestone v1.0 fondasi awal single-core |
+| **[`feature/v2.1-espidf-simd`](https://github.com/fitranurmayadi/esp32-microlm/tree/feature/v2.1-espidf-simd)** | ESP-IDF v5.x Native | PIE 128-Bit SIMD + Dual-Core | **🚀 ~20+ tok/s** | Port native ESP-IDF dengan instruksi vektor Coprocessor CP0 |
 
 ---
 
 ## Lisensi
 
 Didistribusikan di bawah lisensi MIT. Lihat file [`LICENSE`](../LICENSE) untuk detail lengkap.
+

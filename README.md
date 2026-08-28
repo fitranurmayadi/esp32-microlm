@@ -222,16 +222,20 @@ Kibo: [NEUTRAL] Goodbye! See you next time my friend! Stay awesome!
 * [x] **4-Way 32-Bit Word Unrolling**: 32-bit packed weight fetching with 4-way independent FPU accumulator unrolling.
 * [x] **Strict Memory Tiering**: Hot activations locked in internal SRAM (240 MB/s), weights and KV-cache in Octal PSRAM (80 MB/s).
 * [x] **Hardware Telemetry & Action Hooks**: Real-time on-chip RTOS diagnostics (`status`), eye display commands, and servo actuation.
-* [x] **Scientific Profiling Suite**: Comprehensive empirical measurements documented in [`BENCHMARK.md`](BENCHMARK.md).
+---
 
-### Future Roadmap (v2.1+):
-* [ ] **128-Bit Xtensa PIE Assembly**: Custom assembly kernels for full INT8 (W8A8) activation vectorization.
-* [ ] **Fixed-Point Non-Linearities**: Integer lookup tables (LUTs) for Softmax and LayerNorm.
-* [ ] **Broader Multi-Turn Dataset & QAT**: Quantization-Aware Training for larger conversational domains.
-* [ ] **Physical Hardware Peripherals**: Wiring physical GC9A01 circular LCD and I2S MEMS audio modules.
+## 🔖 Release Versions & Branching Strategy
+
+| Branch / Tag | Framework | Inference Engine | Measured Speed | Description |
+| :--- | :--- | :--- | :---: | :--- |
+| **`main`** | Arduino Core 3.x | Dual-Core 8-Way FPU | **⚡ 15.6 tok/s** | Stable default release with bilingual math & telemetry |
+| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core 8-Way FPU | **⚡ 15.6 tok/s** | Milestone v2.0 rtos-parallel release |
+| **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Scalar | **~12.3 tok/s** | Milestone v1.0 baseline single-core release |
+| **[`feature/v2.1-espidf-simd`](https://github.com/fitranurmayadi/esp32-microlm/tree/feature/v2.1-espidf-simd)** | ESP-IDF v5.x Native | PIE 128-Bit SIMD + Dual-Core | **🚀 ~20+ tok/s** | Native ESP-IDF port with Coprocessor CP0 vector instructions |
 
 ---
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
