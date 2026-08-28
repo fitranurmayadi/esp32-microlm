@@ -1,11 +1,23 @@
-# Build directories and binaries
+# PlatformIO & ESP-IDF Build Directories
+.pio/
+*/.pio/
 build/
 **/build/
+managed_components/
+dependencies.lock
+sdkconfig.old
+sdkconfig.ci
+
+# Compilation & Binary Artifacts
 *.bin.elf
 *.bin.map
 *.merged.bin
+*.o
+*.a
+*.d
+*.elf
 
-# Python
+# Python & Virtual Environments
 __pycache__/
 *.py[cod]
 *$py.class
@@ -14,7 +26,7 @@ env/
 venv/
 *.pt
 
-# IDE and local configuration
+# IDEs & System Files
 .vscode/
 .idea/
 .agents/
@@ -22,8 +34,10 @@ external_comparisons/
 .DS_Store
 *.swp
 *~
+*.log
 
-# Presentation and social media assets (kept locally)
+# Scratch & Temporary Testing
+scratch_*/
 testing_video/assets/
 testing_video/carousel_slides/
 testing_video/generate_*.py
@@ -31,3 +45,4 @@ testing_video/render_carousel_slides.py
 testing_video/demo_thumbnail.png
 testing_video/kibo_demo.gif
 testing_video/kibo_terminal_cropped.mp4
+

@@ -224,10 +224,10 @@
   <div class="header">
     <div class="badges-row">
       <div class="badge badge-primary">⚡ On-Device AI • ESP32-S3</div>
-      <div class="badge badge-secondary">Experimental Research (100% Local)</div>
+      <div class="badge badge-secondary">DevKitC-1 • Arduino Nano ESP32 • Seeed XIAO S3</div>
     </div>
     <h1 class="headline">Running a 1.84M Language Model<br><span>Entirely On-Chip on ESP32-S3</span></h1>
-    <p class="subheadline">Independent embedded AI research: INT8 Causal Transformer with multi-board hardware execution</p>
+    <p class="subheadline">Bare-metal C++ W8A32 Transformer running 100% locally across 3 physical ESP32-S3 boards</p>
   </div>
 
   <!-- Terminal Container (Framing Box) -->
@@ -248,14 +248,14 @@
 
   <!-- Bottom Research Findings (Short & Punchy) -->
   <div class="results-section">
-    <div class="section-title">📊 Key Hardware Research Findings:</div>
+    <div class="section-title">📊 Key Hardware Verification Matrix:</div>
     <div class="cards-grid">
       <div class="card">
         <div class="card-header">
           <span class="card-tag">Speed & Compute</span>
         </div>
         <div class="card-metric">15.5 <span>tok/s</span></div>
-        <p class="card-desc">Dual-Core Xtensa LX7 + 8-Way Unrolled FPU Loop.</p>
+        <p class="card-desc">Dual-Core Xtensa LX7 + 8-Way FP32 FPU unrolled loop.</p>
       </div>
       
       <div class="card">
@@ -263,15 +263,17 @@
           <span class="card-tag">Memory Footprint</span>
         </div>
         <div class="card-metric">2.02 <span>MB</span></div>
-        <p class="card-desc">INT8 W8A32 in PSRAM, leaving 5.18 MB free RAM.</p>
+        <p class="card-desc">W8A32 INT8 in Octal PSRAM, leaving >5.4 MB free RAM.</p>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <span class="card-tag">Hardware Compatibility</span>
+          <span class="card-tag">Hardware Verified</span>
         </div>
-        <div class="card-metric">3 <span>Boards</span></div>
-        <p class="card-desc">Verified on DevKitC-1, Nano ESP32 & Seeed XIAO.</p>
+        <div class="card-metric" style="font-size: 15px; font-weight: 700; color: #0284c7; line-height: 1.3; margin-bottom: 5px;">
+          3 Hardware Boards
+        </div>
+        <p class="card-desc">ESP32-S3 DevKit, Arduino Nano ESP32 & Seeed Studio XIAO ESP32-S3.</p>
       </div>
     </div>
   </div>
