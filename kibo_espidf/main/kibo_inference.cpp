@@ -717,8 +717,16 @@ void run_live_mcu_benchmark() {
 
 void kibo_process_chat(const std::string& user_input) {
     std::string clean_cmd = user_input;
-    while (!clean_cmd.empty() && (clean_cmd.back() == '\r' || clean_cmd.back() == '\n' || clean_cmd.back() == ' ')) {
+    while (!clean_cmd.empty() && (clean_cmd.back() == '\r' || clean_cmd.back() == '\n' || clean_cmd.back() == ' ' || clean_cmd.back() == '\t')) {
         clean_cmd.pop_back();
+    }
+    while (!clean_cmd.empty() && (clean_cmd.front() == '\r' || clean_cmd.front() == '\n' || clean_cmd.front() == ' ' || clean_cmd.front() == '\t')) {
+        clean_cmd.erase(clean_cmd.begin());
+    }
+    if (clean_cmd.empty()) {
+        printf("\nUser: ");
+        fflush(stdout);
+        return;
     }
     
     if (clean_cmd == "benchmark" || clean_cmd == "test quant") {

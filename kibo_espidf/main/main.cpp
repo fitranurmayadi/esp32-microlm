@@ -27,6 +27,9 @@ extern "C" void app_main(void) {
         return;
     }
     
+    // Flush any bootup UART garbage/keystrokes
+    uart_flush_input(UART_NUM_0);
+    
     printf("\nType your message below and press Enter (Commands: 'benchmark', 'status'):\n\nUser: ");
     fflush(stdout);
     
