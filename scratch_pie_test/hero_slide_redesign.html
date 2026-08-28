@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, height=1350">
+<title>Kibo Micro-LM Hero Slide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    width: 1080px;
+    height: 1350px;
+    background: #ffffff;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 60px 56px 48px 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Subtle decorative background */
+  .bg-glow {
+    position: absolute;
+    top: -120px;
+    right: -100px;
+    width: 550px;
+    height: 550px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Header Section */
+  .header {
+    z-index: 1;
+  }
+  .badges-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .badge-primary {
+    background: #f0f9ff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+  }
+  .badge-secondary {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+  }
+  .headline {
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #0f172a;
+    letter-spacing: -0.8px;
+    margin-bottom: 8px;
+  }
+  .headline span {
+    color: #0284c7;
+  }
+  .subheadline {
+    font-size: 19px;
+    color: #64748b;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  /* Terminal Mockup Box Container */
+  .terminal-container {
+    z-index: 1;
+    width: 968px;
+    height: 580px;
+    margin: 18px 0;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .terminal-header {
+    height: 38px;
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+  }
+  .window-dots {
+    display: flex;
+    gap: 7px;
+  }
+  .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+  }
+  .dot-red { background: #ff5f56; border: 1px solid #e0443e; }
+  .dot-yellow { background: #ffbd2e; border: 1px solid #dea123; }
+  .dot-green { background: #27c93f; border: 1px solid #1aab29; }
+  .terminal-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+  }
+  .terminal-content-area {
+    width: 100%;
+    flex: 1;
+    background: #ffffff;
+    position: relative;
+  }
+
+  /* Bottom Research Results Cards (Grid 3 Col) */
+  .results-section {
+    z-index: 1;
+  }
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0284c7;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
+  }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .card-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .card-metric {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .card-metric span {
+    color: #0284c7;
+    font-size: 16px;
+  }
+  .card-desc {
+    font-size: 12.5px;
+    color: #64748b;
+    line-height: 1.35;
+    font-weight: 500;
+  }
+
+  /* Footer */
+  .footer {
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 18px;
+    border-top: 1px solid #f1f5f9;
+    font-size: 13.5px;
+    color: #64748b;
+    font-weight: 600;
+  }
+  .footer-repo {
+    font-family: 'JetBrains Mono', monospace;
+    color: #0284c7;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badges-row">
+      <div class="badge badge-primary">⚡ On-Device AI • ESP32-S3</div>
+      <div class="badge badge-secondary">Experimental Research (Zero Cloud)</div>
+    </div>
+    <h1 class="headline">Running a Micro Language Model<br><span>Entirely on ESP32-S3 @ 240MHz</span></h1>
+    <p class="subheadline">Independent research experiment: 1.84M INT8 Transformer + Gemma 3n PLE on a $5 microcontroller</p>
+  </div>
+
+  <!-- Terminal Container (Framing Box) -->
+  <div class="terminal-container" id="term-box">
+    <div class="terminal-header">
+      <div class="window-dots">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+      </div>
+      <div class="terminal-title">fitra@AIoT-Labs: ~/Projects/KIBO-MICROLM (UART 115200)</div>
+      <div style="width: 48px;"></div>
+    </div>
+    <div class="terminal-content-area" id="terminal-target">
+      <!-- Live animated terminal video will be composed here -->
+    </div>
+  </div>
+
+  <!-- Bottom Research Findings (Short & Punchy) -->
+  <div class="results-section">
+    <div class="section-title">📊 Key Hardware Research Findings:</div>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-tag">Speed & Compute</span>
+        </div>
+        <div class="card-metric">15.5 <span>tok/s</span></div>
+        <p class="card-desc">Dual-Core Xtensa LX7 + 8-Way Unrolled FPU Loop.</p>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <span class="card-tag">Memory Footprint</span>
+        </div>
+        <div class="card-metric">2.02 <span>MB</span></div>
+        <p class="card-desc">INT8 W8A32 in PSRAM, leaving 5.18 MB free RAM.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-tag">Knowledge Scale</span>
+        </div>
+        <div class="card-metric">10M-25M <span>PLE</span></div>
+        <p class="card-desc">Gemma 3n Flash Table XIP mmap (< 45 µs access).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>Fitra Nurmayadi | <strong>Kibo Micro-LM v4.0</strong></div>
+    <div class="footer-repo">github.com/fitranurmayadi/esp32-microlm</div>
+  </div>
+</body>
+</html>
