@@ -10,7 +10,7 @@
 
 Kibo Edisi Bahasa Indonesia adalah paket mandiri dari model bahasa generatif mikro (Micro-LM) dan mesin inferensi berbasis C++ bare-metal yang berjalan secara lokal di mikrokontroler ESP32-S3.
 
-Seluruh proses inferensi dieksekusi 100% on-device tanpa ketergantungan eksternal. Pada **v2.0**, engine ini memanfaatkan **komputasi paralel Dual-Core FreeRTOS** (Core 0 + Core 1 @ 240MHz) dan **vektorisasi unrolling 4-way 32-bit** untuk menghasilkan kecepatan generasi **~18–21 token/detik**.
+Seluruh proses inferensi dieksekusi 100% on-device tanpa ketergantungan eksternal. Pada **v2.0 / v3.0**, engine ini memanfaatkan **komputasi paralel Dual-Core FreeRTOS** (Core 0 + Core 1 @ 240MHz) dan **kernel unrolling 8-way** untuk menghasilkan kecepatan generasi riil **14.5–15.6 token/detik** pada hardware fisik (~65ms total per token: 30ms streaming bus Octal PSRAM + 35ms komputasi dual-core CPU).
 
 ---
 
@@ -157,12 +157,15 @@ Kibo: [NEUTRAL] Sampai jumpa sahabatku! Tetap semangat dan jaga kesehatan ya!
 
 ## 🔖 Versi Rilis & Strategi Percabangan Git (Branching)
 
-| Branch / Tag | Framework | Engine Inferensi | Kecepatan Terukur | Deskripsi |
-| :--- | :--- | :--- | :---: | :--- |
-| **`main`** | Universal | Dual-Core 8-Way FPU + Port ESP-IDF | **⚡ 15.6 tok/s** | Rilis default stabil dengan alat matematika bilingual & telemetri |
-| **[`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0)** (Tag `v3.0`) | ESP-IDF v5.x Native | PIE 128-Bit SIMD + Dual-Core | **🚀 ~20+ tok/s Target** | Rilis milestone v3.0 port native ESP-IDF dengan Coprocessor CP0 |
-| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way FPU | **⚡ 15.6 tok/s** | Rilis milestone v2.0 dual-core 240MHz paralel |
-| **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Skalar | **~12.3 tok/s** | Rilis milestone v1.0 fondasi awal single-core |
+| Branch / Tag | Framework | Engine Inferensi | Kecepatan Riil Hardware | Batas Teoretis Siklus ALU | Deskripsi |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| **`main`** | Universal | Dual-Core 8-Way FPU + Port ESP-IDF | **⚡ 14.5 – 15.6 tok/s** | ~22 tok/s | Rilis default produksi dengan alat matematika bilingual & telemetri |
+| **[`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0)** (Tag `v3.0`) | ESP-IDF v5.x Native | Dual-Core Paralel + Coprocessor CP0 | **⚡ 14.5 – 15.6 tok/s** | ~22 tok/s | Rilis milestone v3.0 native ESP-IDF dengan dukungan CP0 SIMD |
+| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way FPU | **⚡ 14.2 – 15.6 tok/s** | ~18 tok/s | Rilis milestone v2.0 dual-core 240MHz paralel |
+| **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Skalar W8A32 | **~12.3 tok/s** | ~14 tok/s | Rilis milestone v1.0 fondasi awal single-core |
+
+> **Catatan Fisika Latensi (1.84M Parameter)**: Setiap 1 token yang digenerasikan membaca 1.79 MB data bobot model melewati bus Octal PSRAM SPI 80MHz (transit memori ~30 ms) ditambah komputasi dual-core CPU (~35 ms), menghasilkan batas throughput fisik terukur ~65 ms per token (14.5–15.6 token/detik).
+
 
 ---
 

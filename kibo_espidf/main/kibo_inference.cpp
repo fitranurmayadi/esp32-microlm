@@ -192,11 +192,11 @@ void kibo_init_dual_core() {
 
 // Parallel / Single-Core Dispatcher
 static void matmul_int8_vec(float* out, const float* x, const int8_t* w, float scale, const float* bias, int rows, int cols) {
-    if (kibo_telemetry.dual_core_active && core0_task_handle != NULL && rows >= 512) {
+    if (kibo_telemetry.dual_core_active && core0_task_handle != NULL && (rows * cols >= 65536 || rows >= 384)) {
         int mid = rows / 2;
         main_task_handle = xTaskGetCurrentTaskHandle();
         
-        // Dispatch first half to Core 0
+        // Dispatch first half to Core 1
         core0_job.type = JOB_MATMUL_SLICE;
         core0_job.out = out;
         core0_job.x = x;
@@ -208,10 +208,10 @@ static void matmul_int8_vec(float* out, const float* x, const int8_t* w, float s
         core0_job.cols = cols;
         xTaskNotifyGive(core0_task_handle);
         
-        // Compute second half on Core 1 concurrently
+        // Compute second half on Core 0 concurrently
         matmul_int8_slice(out, x, w, scale, bias, mid, rows, cols);
         
-        // Wait for Core 0 completion
+        // Wait for Core 1 completion
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     } else {
         matmul_int8_slice(out, x, w, scale, bias, 0, rows, cols);

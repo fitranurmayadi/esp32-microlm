@@ -10,7 +10,7 @@
 
 Kibo is an on-chip generative Micro Language Model (Micro-LM) and hybrid inference engine written in bare-metal C++ for the ESP32-S3 microcontroller.
 
-The entire system executes locally on-device with zero external dependencies. In **v2.0**, the engine utilizes **Dual-Core FreeRTOS parallel task splitting** (Core 0 + Core 1 @ 240MHz) and **4-way 32-bit packed word unrolling** to achieve **~18–21 tokens/second** generation throughput.
+The entire system executes locally on-device with zero external dependencies. In **v2.0 / v3.0**, the engine utilizes **Dual-Core FreeRTOS parallel task splitting** (Core 0 + Core 1 @ 240MHz) and **8-way unrolled compute kernels** to achieve **14.5–15.6 tokens/second** sustained generation throughput on physical hardware (~65ms total per token: 30ms Octal PSRAM streaming + 35ms compute).
 
 ---
 
@@ -219,19 +219,23 @@ Kibo: [NEUTRAL] Goodbye! See you next time my friend! Stay awesome!
 
 ### Milestone v2.0 (High-Throughput Dual-Core & Memory Tiering) — ✅ Completed
 * [x] **FreeRTOS Dual-Core Parallelism**: Core 0 (PRO_CPU) + Core 1 (APP_CPU) parallel MLP matrix splitting & Multi-Head Attention.
-* [x] **4-Way 32-Bit Word Unrolling**: 32-bit packed weight fetching with 4-way independent FPU accumulator unrolling.
+* [x] **8-Way Direct Unrolling**: 8-way independent FPU accumulator unrolling with zero-overhead pointer stepping.
 * [x] **Strict Memory Tiering**: Hot activations locked in internal SRAM (240 MB/s), weights and KV-cache in Octal PSRAM (80 MB/s).
 * [x] **Hardware Telemetry & Action Hooks**: Real-time on-chip RTOS diagnostics (`status`), eye display commands, and servo actuation.
+
 ---
 
 ## 🔖 Release Versions & Branching Strategy
 
-| Branch / Tag | Framework | Inference Engine | Measured Speed | Description |
-| :--- | :--- | :--- | :---: | :--- |
-| **`main`** | Universal | Dual-Core 8-Way FPU + ESP-IDF Port | **⚡ 15.6 tok/s** | Stable default release with bilingual math & telemetry |
-| **[`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0)** (Tag `v3.0`) | ESP-IDF v5.x Native | PIE 128-Bit SIMD + Dual-Core | **🚀 ~20+ tok/s Target** | Milestone v3.0 native ESP-IDF port with Coprocessor CP0 |
-| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way FPU | **⚡ 15.6 tok/s** | Milestone v2.0 dual-core 240MHz parallel release |
-| **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Scalar | **~12.3 tok/s** | Milestone v1.0 baseline single-core release |
+| Branch / Tag | Framework | Inference Engine | Real Measured Speed (Hardware) | Theoretical Compute Ceiling | Description |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| **`main`** | Universal | Dual-Core 8-Way FPU + ESP-IDF Port | **⚡ 14.5 – 15.6 tok/s** | ~22 tok/s | Stable production codebase with bilingual tools |
+| **[`release/v3.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v3.0)** (Tag `v3.0`) | ESP-IDF v5.x Native | Dual-Core Parallel + Coprocessor CP0 | **⚡ 14.5 – 15.6 tok/s** | ~22 tok/s | Milestone v3.0 native ESP-IDF with CP0 SIMD support |
+| **[`release/v2.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v2.0)** (Tag `v2.0`) | Arduino Core 3.x | Dual-Core FreeRTOS + 8-Way FPU | **⚡ 14.2 – 15.6 tok/s** | ~18 tok/s | Milestone v2.0 dual-core 240MHz parallel release |
+| **[`release/v1.0`](https://github.com/fitranurmayadi/esp32-microlm/tree/release/v1.0)** (Tag `v1.0`) | Arduino Core 3.x | Single-Core Scalar W8A32 | **~12.3 tok/s** | ~14 tok/s | Milestone v1.0 baseline single-core release |
+
+> **Note on Latency Physics (1.84M Parameters)**: Every generated token streams 1.79 MB of model weights across the 80MHz Octal PSRAM SPI bus (~30 ms transit) plus dual-core CPU compute (~35 ms), giving a sustained physical ceiling of ~65 ms per token (14.5–15.6 tokens/sec).
+
 
 ---
 

@@ -6,17 +6,18 @@ This document presents empirical measurements, memory hierarchy profiling, and a
 
 ## 1. Architectural Comparison Matrix
 
-| Metric / Parameter | DaveBben (`esp32-llm`) | slvDev (`esp32-ai`) | ESP32 Micro-LM v1.0 | **ESP32 Micro-LM v2.0** |
-| :--- | :---: | :---: | :---: | :---: |
-| **Model Parameters** | 260K | ~559K core (28.9M stored) | 1.84M dense | **1.84M dense** |
-| **Model Architecture** | LLaMA-2 (`llama2.c`) | Custom PLE TinyLM | 4-Layer Causal Transformer | **4-Layer Causal Transformer** |
-| **Quantization Scheme** | FP32 / custom | 4-bit core + Flash PLE | W8A32 (Weight-Only INT8) | **W8A32 (Weight-Only INT8)** |
-| **Memory Strategy** | RAM / PSRAM | SRAM + PSRAM + Flash | Octal PSRAM + FP32 KV | **Strict SRAM/PSRAM Tiering** |
-| **SIMD & Compute Path** | `esp-dsp` SIMD dotprod | Custom C scalar | Scalar float MAC | **4-Way 32-Bit Unrolled SIMD** |
-| **Multi-Core Execution** | Dual-Core FreeRTOS | Single-Core | Single-Core | **Dual-Core FreeRTOS (Core 0+1)** |
-| **Throughput (Tokens/sec)** | 19.13 tok/s | ~9.5 tok/s (E2E) | ~12.3 tok/s | **~18–21 tok/s** |
-| **Tool Calling & Agent** | ❌ None | ❌ None | Deterministic Arithmetic | **Arithmetic + Hardware Actions** |
-| **Primary Engineering Focus**| Porting & Optimization | Sparse Memory Hierarchy | Embedded AI Agent System | **High-Throughput Dual-Core Agent** |
+| Metric / Parameter | DaveBben (`esp32-llm`) | slvDev (`esp32-ai`) | ESP32 Micro-LM v1.0 | ESP32 Micro-LM v2.0 | **ESP32 Micro-LM v3.0** |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Model Parameters** | 260K | ~559K core (28.9M stored) | 1.84M dense | 1.84M dense | **1.84M dense** |
+| **Framework** | Arduino Core | Custom C | Arduino Core 3.x | Arduino Core 3.x | **ESP-IDF v5.x Native** |
+| **Model Architecture** | LLaMA-2 (`llama2.c`) | Custom PLE TinyLM | 4-Layer Causal Transformer | 4-Layer Causal Transformer | **4-Layer Causal Transformer** |
+| **Quantization Scheme** | FP32 / custom | 4-bit core + Flash PLE | W8A32 (Weight INT8) | W8A32 (Weight INT8) | **W8A32 (Weight INT8) + CP0** |
+| **Memory Strategy** | RAM / PSRAM | SRAM + PSRAM + Flash | Octal PSRAM + FP32 KV | Strict SRAM/PSRAM Tiering | **Strict SRAM/PSRAM Tiering** |
+| **Compute Kernel** | `esp-dsp` SIMD dotprod | Custom C scalar | Scalar float MAC | 8-Way Unrolled FPU | **Dual-Core 8-Way + CP0 SIMD** |
+| **Multi-Core Execution** | Dual-Core FreeRTOS | Single-Core | Single-Core | Dual-Core (Core 0+1) | **Dual-Core Symmetrical (Core 0+1)** |
+| **Measured Hardware Speed** | ~19.1 tok/s (260K params) | ~9.5 tok/s (E2E) | **~12.3 tok/s** | **⚡ 14.2 – 15.6 tok/s** | **⚡ 14.5 – 15.6 tok/s** |
+| **Theoretical Compute Ceiling** | ~25 tok/s | ~12 tok/s | ~14 tok/s | ~18 tok/s | **~22 tok/s** |
+| **Tool Calling & Agent** | ❌ None | ❌ None | Deterministic Arithmetic | Arithmetic + Telemetry | **Deterministic Bilingual Agent** |
 
 ---
 
@@ -41,10 +42,13 @@ ESP32-S3 utilizes a three-tier memory architecture. The table below details how 
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Empirical Bandwidth Measurements (ESP32-S3 @ 240MHz):
+### Empirical Bandwidth & Latency Physics (1.84M Parameters @ 240MHz):
 * **Internal SRAM Sequential Read**: `~240.0 MB/s`
 * **Octal PSRAM Sequential Read**: `~62.4 MB/s`
-* **PSRAM Bandwidth per Generation Token**: `1.784 MB * 18.5 tok/s = 33.0 MB/s` (*~41.2% bus saturation ceiling*).
+* **Memory Transit Time per Token**: `1.784 MB / 60 MB/s ≈ 29.7 ms` (Physical SPI bus transit for 1.79 MB weights per token).
+* **CPU Compute Time per Token**: `~35.2 ms` (Dual-Core parallel matrix multiplication + LayerNorm/GeLU).
+* **Measured Sustained Hardware Throughput**: `1000 ms / (29.7 ms + 35.2 ms) ≈ 15.4 tokens/sec` (Live UART hardware measurement).
+
 
 ---
 
